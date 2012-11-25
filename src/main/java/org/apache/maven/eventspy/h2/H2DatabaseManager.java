@@ -25,23 +25,23 @@ import java.io.InputStream;
 
 public class H2DatabaseManager {
     private static final Object LOCK = new Object();
-    private File directoryOfRepository;
+    private File dbLocation;
     private DataSource cachedDataSource;
 
-    public H2DatabaseManager() {
-        directoryOfRepository = new File(System.getProperty("user.home"), ".m2-plugin-execution-watcher");
-        directoryOfRepository.mkdirs();
+    public H2DatabaseManager(File dbLocation) {
+        this.dbLocation = dbLocation;
     }
 
 
     public boolean doesDatabaseNotExist() {
         synchronized (LOCK) {
-            return directoryOfRepository.listFiles().length == 0;
+            return dbLocation.listFiles().length == 0;
         }
     }
 
     public void create() {
         synchronized (LOCK) {
+            dbLocation.mkdirs();
             JdbcTemplate jdbc = new JdbcTemplate(load());
             jdbc.execute(readCreateScript());
         }
@@ -52,7 +52,7 @@ public class H2DatabaseManager {
             if (cachedDataSource == null) {
                 DriverManagerDataSource dataSource = new DriverManagerDataSource();
                 dataSource.setDriverClassName(Driver.class.getName());
-                dataSource.setUrl("jdbc:h2:" + directoryOfRepository.getAbsolutePath() + "/stats");
+                dataSource.setUrl("jdbc:h2:" + dbLocation.getAbsolutePath() + "/stats");
                 cachedDataSource = dataSource;
             }
             return cachedDataSource;
@@ -76,6 +76,6 @@ public class H2DatabaseManager {
     }
 
     public void setDirectoryOfRepository(File directoryOfRepository) {
-        this.directoryOfRepository = directoryOfRepository;
+        this.dbLocation = directoryOfRepository;
     }
 }

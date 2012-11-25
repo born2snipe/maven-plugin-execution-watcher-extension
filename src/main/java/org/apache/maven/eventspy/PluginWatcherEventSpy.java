@@ -19,29 +19,41 @@ import org.apache.maven.execution.ExecutionEvent;
 import org.codehaus.plexus.component.annotations.Component;
 import org.openide.util.Lookup;
 
+import java.io.File;
+
 @Component(role = EventSpy.class)
 public class PluginWatcherEventSpy extends AbstractEventSpy {
+    private static final File DEFAULT_LOCATION = new File(System.getProperty("user.home"), ".m2-plugin-execution-watcher");
+    public static final String DB_DIRECTORY_KEY = "plugin.execution.watcher.directory";
+    public static final String TURN_ON_KEY = "plugin.execution.watcher";
+
     private Lookup lookup = Lookup.getDefault();
     private PluginStatsRepository pluginStatsRepository;
     private PluginStatsFactory pluginStatsFactory = new PluginStatsFactory();
 
     @Override
     public void init(Context context) throws Exception {
-        pluginStatsRepository = lookup.lookup(PluginStatsRepository.class);
-        if (pluginStatsRepository == null) {
-            pluginStatsRepository = new H2PluginStatsRepository();
+        if (shouldWatchPlugins()) {
+            pluginStatsRepository = lookup.lookup(PluginStatsRepository.class);
+            if (pluginStatsRepository == null) {
+                pluginStatsRepository = new H2PluginStatsRepository(determineFolder());
+            }
+            pluginStatsRepository.initialize(context);
         }
-        pluginStatsRepository.initialize(context);
     }
 
     @Override
     public void onEvent(Object event) throws Exception {
-        if (event instanceof ExecutionEvent) {
+        if (shouldWatchPlugins() && event instanceof ExecutionEvent) {
             ExecutionEvent executionEvent = (ExecutionEvent) event;
             if (shouldBeSaved(executionEvent)) {
                 pluginStatsRepository.save(pluginStatsFactory.build(executionEvent));
             }
         }
+    }
+
+    private boolean shouldWatchPlugins() {
+        return System.getProperties().containsKey(TURN_ON_KEY);
     }
 
     private boolean shouldBeSaved(ExecutionEvent event) {
@@ -53,6 +65,13 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
                 return true;
         }
         return false;
+    }
+
+    private File determineFolder() {
+        if (System.getProperties().containsKey(DB_DIRECTORY_KEY)) {
+            return new File(System.getProperty(DB_DIRECTORY_KEY));
+        }
+        return DEFAULT_LOCATION;
     }
 
     protected PluginStatsRepository getPluginStatsRepository() {

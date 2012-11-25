@@ -19,9 +19,15 @@ import org.apache.maven.eventspy.PluginStats;
 import org.apache.maven.eventspy.PluginStatsRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import java.io.File;
+
 public class H2PluginStatsRepository implements PluginStatsRepository {
-    private H2DatabaseManager h2DatabaseManager = new H2DatabaseManager();
+    private H2DatabaseManager h2DatabaseManager;
     private JdbcTemplate jdbcTemplate;
+
+    public H2PluginStatsRepository(File dbLocation) {
+        h2DatabaseManager = new H2DatabaseManager(dbLocation);
+    }
 
     @Override
     public void initialize(EventSpy.Context context) {

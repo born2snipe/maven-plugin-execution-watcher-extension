@@ -32,7 +32,7 @@ public class H2PluginStatsRepositoryInitializeTest {
     @Mock
     private DataSource dataSource;
     @InjectMocks
-    private H2PluginStatsRepository repository = new H2PluginStatsRepository();
+    private H2PluginStatsRepository repository = new H2PluginStatsRepository(null);
 
     @Test
     public void initialize_shouldNotCreateTheDatabaseIfItExistsAlready() {

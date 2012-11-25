@@ -16,6 +16,7 @@ package org.apache.maven.eventspy;
 
 import org.apache.maven.eventspy.h2.H2PluginStatsRepository;
 import org.apache.maven.execution.ExecutionEvent;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -42,6 +43,29 @@ public class PluginWatcherEventSpyTest {
     @InjectMocks
     private PluginWatcherEventSpy spy = new PluginWatcherEventSpy();
 
+    @Before
+    public void setUp() throws Exception {
+        System.setProperty(PluginWatcherEventSpy.TURN_ON_KEY, "");
+    }
+
+    @Test
+    public void onEvent_shouldDoNothingIfTHeTriggerPropertyIsNotGiven() throws Exception {
+        System.getProperties().remove(PluginWatcherEventSpy.TURN_ON_KEY);
+
+        spy.onEvent(executionEvent);
+
+        verifyZeroInteractions(statsRepository, pluginStatsFactory);
+    }
+
+    @Test
+    public void init_shouldDoNothingIfTheTriggerPropertyIsNotGiven() throws Exception {
+        System.getProperties().remove(PluginWatcherEventSpy.TURN_ON_KEY);
+        when(lookup.lookup(PluginStatsRepository.class)).thenReturn(statsRepository);
+
+        spy.init(context);
+
+        verifyZeroInteractions(statsRepository);
+    }
 
     @Test
     public void onEvent_shouldIgnoreTypesThatAreNotMojoRelated() throws Exception {

@@ -33,10 +33,9 @@ public class H2PluginStatsRepositoryTest {
     public void setUp() throws Exception {
         File directory = setupH2Directory();
 
-        H2DatabaseManager databaseManager = new H2DatabaseManager();
-        databaseManager.setDirectoryOfRepository(directory);
+        H2DatabaseManager databaseManager = new H2DatabaseManager(directory);
 
-        repository = new H2PluginStatsRepository();
+        repository = new H2PluginStatsRepository(directory);
         repository.setH2DatabaseManager(databaseManager);
         repository.initialize(null);
 
