@@ -24,6 +24,7 @@ public class PluginStats {
     public Plugin plugin;
     public String executionId;
     public Date timestamp;
+    public int executionHashCode;
 
     public static enum Type {
         START(ExecutionEvent.Type.MojoStarted),

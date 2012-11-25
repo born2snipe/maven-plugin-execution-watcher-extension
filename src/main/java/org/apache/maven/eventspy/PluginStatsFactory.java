@@ -28,6 +28,7 @@ public class PluginStatsFactory {
         stats.timestamp = new Date();
         stats.project = buildProject(event);
         stats.plugin = buildPlugin(event);
+        stats.executionHashCode = event.getMojoExecution().hashCode();
         return stats;
     }
 
