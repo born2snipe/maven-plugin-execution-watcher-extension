@@ -34,6 +34,7 @@ create table plugin_execution (
     execution_hashcode int,
     start_time timestamp,
     end_time timestamp,
+    elapsed_millis_time long as ABS(DATEDIFF('MILLISECOND', end_time, start_time)),
     result varchar(255)
 );
 
