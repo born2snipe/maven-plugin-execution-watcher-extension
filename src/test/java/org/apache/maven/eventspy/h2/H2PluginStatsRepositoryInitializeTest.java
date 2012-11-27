@@ -22,6 +22,8 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import javax.sql.DataSource;
 
+import java.io.File;
+
 import static junit.framework.Assert.assertNotNull;
 import static org.mockito.Mockito.*;
 
@@ -32,7 +34,7 @@ public class H2PluginStatsRepositoryInitializeTest {
     @Mock
     private DataSource dataSource;
     @InjectMocks
-    private H2PluginStatsRepository repository = new H2PluginStatsRepository(null);
+    private H2PluginStatsRepository repository = new H2PluginStatsRepository(new File("."));
 
     @Test
     public void initialize_shouldNotCreateTheDatabaseIfItExistsAlready() {

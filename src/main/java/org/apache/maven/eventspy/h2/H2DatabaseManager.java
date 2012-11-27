@@ -30,6 +30,7 @@ public class H2DatabaseManager {
 
     public H2DatabaseManager(File dbLocation) {
         this.dbLocation = dbLocation;
+        dbLocation.mkdirs();
     }
 
 
@@ -41,7 +42,6 @@ public class H2DatabaseManager {
 
     public void create() {
         synchronized (LOCK) {
-            dbLocation.mkdirs();
             JdbcTemplate jdbc = new JdbcTemplate(load());
             jdbc.execute(readCreateScript());
         }
