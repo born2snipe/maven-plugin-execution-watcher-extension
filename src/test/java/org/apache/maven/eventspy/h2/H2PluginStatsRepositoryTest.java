@@ -42,7 +42,7 @@ public class H2PluginStatsRepositoryTest {
         jdbc = new JdbcTemplate(databaseManager.load());
 
         pluginStats = new PluginStats();
-        pluginStats.project = project("groupId", "artifactId");
+        pluginStats.project = project("groupId", "artifactId", "1.0");
         pluginStats.plugin = plugin("groupId", "artifactId", "1.0", "clean");
         pluginStats.timestamp = new Date();
         pluginStats.executionId = "execution-1";
@@ -76,7 +76,7 @@ public class H2PluginStatsRepositoryTest {
         repository.save(pluginStats);
         repository.save(pluginStats);
 
-        assertProject("groupId", "artifactId");
+        assertProject("groupId", "artifactId", "1.0");
         assertPlugin("groupId", "artifactId", "1.0");
     }
 
@@ -84,7 +84,7 @@ public class H2PluginStatsRepositoryTest {
     public void save_start() {
         repository.save(pluginStats);
 
-        assertProject("groupId", "artifactId");
+        assertProject("groupId", "artifactId", "1.0");
         assertPlugin("groupId", "artifactId", "1.0");
         assertExecution("execution-1", "clean", PluginStats.Type.START);
     }
@@ -103,15 +103,17 @@ public class H2PluginStatsRepositoryTest {
         ));
     }
 
-    private void assertProject(String groupId, String artifactId) {
+    private void assertProject(String groupId, String artifactId, String version) {
         assertEquals("we should have saved the project", 1,
-                jdbc.queryForInt("select count(1) from project where group_id = ? and artifact_id = ?", groupId, artifactId));
+                jdbc.queryForInt("select count(1) from project where group_id = ? " +
+                        "and artifact_id = ? and version =?", groupId, artifactId, version));
     }
 
-    private PluginStats.Project project(String groupId, String artifactId) {
+    private PluginStats.Project project(String groupId, String artifactId, String version) {
         PluginStats.Project project = new PluginStats.Project();
         project.groupId = groupId;
         project.artifactId = artifactId;
+        project.version = version;
         return project;
     }
 

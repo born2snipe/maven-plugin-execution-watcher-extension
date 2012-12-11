@@ -83,16 +83,17 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
     private long findOrCreateProject(PluginStats pluginStats) {
         String groupId = pluginStats.project.groupId;
         String artifactId = pluginStats.project.artifactId;
+        String version = pluginStats.project.version;
 
         if (projectDoesNotExist(groupId, artifactId)) {
             jdbcTemplate.update(
-                    "insert into project (group_id, artifact_id) values (?,?)",
-                    groupId, artifactId
+                    "insert into project (group_id, artifact_id, version) values (?,?,?)",
+                    groupId, artifactId, version
             );
         }
         return jdbcTemplate.queryForLong(
-                "select id from project where group_id = ? and artifact_id = ?",
-                groupId, artifactId);
+                "select id from project where group_id = ? and artifact_id = ? and version = ?",
+                groupId, artifactId, version);
     }
 
     private boolean projectDoesNotExist(String groupId, String artifactId) {

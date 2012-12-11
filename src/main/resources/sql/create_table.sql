@@ -22,7 +22,8 @@ create table plugin (
 create table project (
     id long primary key auto_increment,
     group_id varchar(255),
-    artifact_id varchar(255)
+    artifact_id varchar(255),
+    version varchar(255)
 );
 
 create table plugin_execution (

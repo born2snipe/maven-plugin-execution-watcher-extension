@@ -50,6 +50,7 @@ public class PluginStats {
     public static class Project {
         public String groupId;
         public String artifactId;
+        public String version;
     }
 
     public static class Plugin {
