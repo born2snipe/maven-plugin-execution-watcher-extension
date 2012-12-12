@@ -21,6 +21,8 @@ create table plugin (
 
 create table build (
     id long primary key,
+    top_level_project_id long,
+    goals varchar(255),
     start_time timestamp,
     end_time timestamp,
     elapsed_millis_time long as ABS(DATEDIFF('MILLISECOND', end_time, start_time)),
@@ -47,6 +49,10 @@ create table plugin_execution (
     elapsed_millis_time long as ABS(DATEDIFF('MILLISECOND', end_time, start_time)),
     result varchar(255)
 );
+
+alter table build
+    add constraint fk_build_to_project
+        foreign key (top_level_project_id) references project(id);
 
 alter table plugin_execution
     add constraint fk_plugin_execution_to_build

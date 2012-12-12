@@ -49,6 +49,7 @@ public class H2PluginStatsRepositoryTest {
         session = new MavenSession(null, null, new DefaultMavenExecutionRequest(), new DefaultMavenExecutionResult());
         session.getRequest().setStartTime(new Date());
         session.setProjects(new ArrayList<MavenProject>());
+        session.getRequest().setGoals(Arrays.asList("clean", "verify"));
 
         pluginStats = new PluginStats();
         pluginStats.project = project("groupId", "artifactId", "1.0");
@@ -229,10 +230,21 @@ public class H2PluginStatsRepositoryTest {
     }
 
     private void assertStartOfBuild(MavenSession session) {
+        String goals = "";
+        for (String goal : session.getRequest().getGoals()) {
+            goals += goal + " ";
+        }
+
+        MavenProject topLevelProject = session.getTopLevelProject();
+        long projectId = jdbc.queryForLong("select id from project where group_id=? and artifact_id=? and version=?",
+                topLevelProject.getGroupId(), topLevelProject.getArtifactId(), topLevelProject.getVersion());
+
         Date startTime = session.getRequest().getStartTime();
-        assertEquals(1, jdbc.queryForInt("select count(1) from build where id = ? and start_time = ? and passed is null",
+        assertEquals(1, jdbc.queryForInt("select count(1) from build where id = ? and start_time = ? and passed is null and goals = ? and top_level_project_id = ?",
                 startTime.getTime(),
-                startTime
+                startTime,
+                goals.trim(),
+                projectId
         ));
     }
 
