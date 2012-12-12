@@ -52,7 +52,7 @@ public class H2DatabaseManager {
             if (cachedDataSource == null) {
                 DriverManagerDataSource dataSource = new DriverManagerDataSource();
                 dataSource.setDriverClassName(Driver.class.getName());
-                dataSource.setUrl("jdbc:h2:" + dbLocation.getAbsolutePath() + "/stats");
+                dataSource.setUrl("jdbc:h2:" + dbLocation.getAbsolutePath() + "/stats;AUTO_SERVER=TRUE");
                 cachedDataSource = dataSource;
             }
             return cachedDataSource;

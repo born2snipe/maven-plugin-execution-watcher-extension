@@ -48,6 +48,7 @@ public class PluginStatsFactory {
         PluginStats.Project project = new PluginStats.Project();
         project.groupId = projectBeingBuilt.getGroupId();
         project.artifactId = projectBeingBuilt.getArtifactId();
+        project.version = projectBeingBuilt.getVersion();
         return project;
     }
 }

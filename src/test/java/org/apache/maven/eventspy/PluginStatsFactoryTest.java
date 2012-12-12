@@ -50,6 +50,7 @@ public class PluginStatsFactoryTest {
         MavenProject mavenProject = new MavenProject();
         mavenProject.setGroupId("project-groupId");
         mavenProject.setArtifactId("project-artifactId");
+        mavenProject.setVersion("project-version");
 
         when(mojoExecution.getGroupId()).thenReturn("plugin-groupId");
         when(mojoExecution.getArtifactId()).thenReturn("plugin-artifactId");
@@ -78,6 +79,7 @@ public class PluginStatsFactoryTest {
         assertNotNull(stats.project);
         assertEquals("project-groupId", stats.project.groupId);
         assertEquals("project-artifactId", stats.project.artifactId);
+        assertEquals("project-version", stats.project.version);
     }
 
     private void assertPlugin(PluginStats stats) {
