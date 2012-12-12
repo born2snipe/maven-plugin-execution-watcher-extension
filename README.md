@@ -22,3 +22,6 @@ This maven extension logs all plugin executions to a H2 database. This allows fo
     - Place your new jar with it's required dependencies in the `lib/ext`
     - You should be good to go
 
+- Can I track some data that is specific to the build?
+    - You can provide the following system property `plugin.execution.watcher.build.data=${data-to-store}` and the value provided will be stored with that run of the build
+    - the data can be up to 1024 characters

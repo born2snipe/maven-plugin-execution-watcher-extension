@@ -21,7 +21,7 @@ public interface PluginStatsRepository {
 
     void save(PluginStats pluginStats);
 
-    void saveBuildStarted(MavenSession session);
+    void saveBuildStarted(MavenSession session, String additionalBuildData);
 
     void saveBuildFinished(MavenSession session);
 }

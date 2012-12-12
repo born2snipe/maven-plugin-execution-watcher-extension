@@ -45,10 +45,14 @@ public class PluginWatcherEventSpyTest {
     private Lookup lookup;
     @InjectMocks
     private PluginWatcherEventSpy spy = new PluginWatcherEventSpy();
+    private MavenSession session;
 
     @Before
     public void setUp() throws Exception {
         System.setProperty(PluginWatcherEventSpy.TURN_ON_KEY, "");
+        session = session();
+
+        when(executionEvent.getSession()).thenReturn(session);
     }
 
     @Test
@@ -84,23 +88,28 @@ public class PluginWatcherEventSpyTest {
     }
 
     @Test
-    public void onEvent_shouldStoreWhenASessionStarts() throws Exception {
-        MavenSession session = session();
+    public void onEvent_shouldStoreWhenASessionStarts_withAdditionalBuildData() throws Exception {
+        System.setProperty("plugin.execution.watcher.build.data", "build-data");
 
         expectEventType(ExecutionEvent.Type.SessionStarted);
-        when(executionEvent.getSession()).thenReturn(session);
 
         spy.onEvent(executionEvent);
 
-        verify(statsRepository).saveBuildStarted(session);
+        verify(statsRepository).saveBuildStarted(session, "build-data");
+    }
+
+    @Test
+    public void onEvent_shouldStoreWhenASessionStarts() throws Exception {
+        expectEventType(ExecutionEvent.Type.SessionStarted);
+
+        spy.onEvent(executionEvent);
+
+        verify(statsRepository).saveBuildStarted(session, null);
     }
 
     @Test
     public void onEvent_shouldStoreWhenASessionEnds() throws Exception {
-        MavenSession session = session();
-
         expectEventType(ExecutionEvent.Type.SessionEnded);
-        when(executionEvent.getSession()).thenReturn(session);
 
         spy.onEvent(executionEvent);
 

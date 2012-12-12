@@ -61,7 +61,7 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
     }
 
     @Override
-    public void saveBuildStarted(MavenSession session) {
+    public void saveBuildStarted(MavenSession session, String additionalBuildData) {
         for (MavenProject project : session.getProjects()) {
             if (projectDoesNotExist(project.getGroupId(), project.getArtifactId(), project.getVersion())) {
                 insertProject(project.getGroupId(), project.getArtifactId(), project.getVersion());
@@ -75,7 +75,8 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
         Date startTime = session.getRequest().getStartTime();
         MavenProject topLevelProject = session.getTopLevelProject();
         long projectId = findProject(topLevelProject.getGroupId(), topLevelProject.getArtifactId(), topLevelProject.getVersion());
-        jdbcTemplate.update("insert into build (id, start_time, goals, top_level_project_id) values (?,?,?,?)", startTime.getTime(), startTime, goals.trim(), projectId);
+        jdbcTemplate.update("insert into build (id, start_time, goals, top_level_project_id, data) values (?,?,?,?,?)",
+                startTime.getTime(), startTime, goals.trim(), projectId, additionalBuildData);
     }
 
     @Override

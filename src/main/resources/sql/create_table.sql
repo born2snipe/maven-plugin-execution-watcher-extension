@@ -26,7 +26,8 @@ create table build (
     start_time timestamp,
     end_time timestamp,
     elapsed_millis_time long as ABS(DATEDIFF('MILLISECOND', end_time, start_time)),
-    passed tinyint
+    passed tinyint,
+    data varchar(1024)
 );
 
 create table project (

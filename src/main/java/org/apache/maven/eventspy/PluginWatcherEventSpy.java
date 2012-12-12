@@ -26,6 +26,7 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
     private static final File DEFAULT_LOCATION = new File(System.getProperty("user.home"), ".m2-plugin-execution-watcher");
     public static final String DB_DIRECTORY_KEY = "plugin.execution.watcher.directory";
     public static final String TURN_ON_KEY = "plugin.execution.watcher";
+    public static final String BUILD_DATA_KEY = "plugin.execution.watcher.build.data";
 
     private Lookup lookup = Lookup.getDefault();
     private PluginStatsRepository pluginStatsRepository;
@@ -49,7 +50,7 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
             if (isPluginRelated(executionEvent)) {
                 pluginStatsRepository.save(pluginStatsFactory.build(executionEvent));
             } else if (isBuildStarting(executionEvent)) {
-                pluginStatsRepository.saveBuildStarted(executionEvent.getSession());
+                pluginStatsRepository.saveBuildStarted(executionEvent.getSession(), System.getProperty(BUILD_DATA_KEY));
             } else if (isBuildFinished(executionEvent)) {
                 pluginStatsRepository.saveBuildFinished(executionEvent.getSession());
             }

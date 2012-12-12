@@ -69,7 +69,7 @@ public class H2PluginStatsRepositoryTest {
         session.getResult().addBuildSummary(new BuildFailure(otherProject, 0, null));
         session.getResult().addBuildSummary(new BuildSuccess(project, 0));
 
-        repository.saveBuildStarted(session);
+        repository.saveBuildStarted(session, "build-data");
         repository.saveBuildFinished(session);
 
         assertEndOfBuild(session, false);
@@ -83,7 +83,7 @@ public class H2PluginStatsRepositoryTest {
         session.getResult().addBuildSummary(new BuildSuccess(project, 0));
         session.getResult().addBuildSummary(new BuildSuccess(otherProject, 0));
 
-        repository.saveBuildStarted(session);
+        repository.saveBuildStarted(session, "build-data");
         repository.saveBuildFinished(session);
 
         assertEndOfBuild(session, true);
@@ -95,7 +95,7 @@ public class H2PluginStatsRepositoryTest {
 
         session.setProjects(Arrays.asList(mavenProject("1", "1", "1")));
 
-        repository.saveBuildStarted(session);
+        repository.saveBuildStarted(session, "build-data");
 
         assertProject("1", "1", "1");
     }
@@ -106,7 +106,7 @@ public class H2PluginStatsRepositoryTest {
 
         session.setProjects(Arrays.asList(mavenProject("1", "1", "1")));
 
-        repository.saveBuildStarted(session);
+        repository.saveBuildStarted(session, "build-data");
 
         assertProject("1", "1", "1");
     }
@@ -116,11 +116,11 @@ public class H2PluginStatsRepositoryTest {
     public void saveBuildStarted() {
         session.setProjects(Arrays.asList(mavenProject("1", "1", "1"), mavenProject("2", "2", "2")));
 
-        repository.saveBuildStarted(session);
+        repository.saveBuildStarted(session, "build-data");
 
         assertProject("1", "1", "1");
         assertProject("2", "2", "2");
-        assertStartOfBuild(session);
+        assertStartOfBuild(session, "build-data");
     }
 
     @Test
@@ -229,7 +229,7 @@ public class H2PluginStatsRepositoryTest {
         jdbc.update("insert into project (group_id, artifact_id, version) values (?,?,?)", groupId, artifactId, version);
     }
 
-    private void assertStartOfBuild(MavenSession session) {
+    private void assertStartOfBuild(MavenSession session, String buildData) {
         String goals = "";
         for (String goal : session.getRequest().getGoals()) {
             goals += goal + " ";
@@ -240,11 +240,12 @@ public class H2PluginStatsRepositoryTest {
                 topLevelProject.getGroupId(), topLevelProject.getArtifactId(), topLevelProject.getVersion());
 
         Date startTime = session.getRequest().getStartTime();
-        assertEquals(1, jdbc.queryForInt("select count(1) from build where id = ? and start_time = ? and passed is null and goals = ? and top_level_project_id = ?",
+        assertEquals(1, jdbc.queryForInt("select count(1) from build where id = ? and start_time = ? and passed is null and goals = ? and top_level_project_id = ? and data = ?",
                 startTime.getTime(),
                 startTime,
                 goals.trim(),
-                projectId
+                projectId,
+                buildData
         ));
     }
 
