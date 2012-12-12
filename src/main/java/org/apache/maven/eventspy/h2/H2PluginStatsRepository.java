@@ -17,9 +17,13 @@ package org.apache.maven.eventspy.h2;
 import org.apache.maven.eventspy.EventSpy;
 import org.apache.maven.eventspy.PluginStats;
 import org.apache.maven.eventspy.PluginStatsRepository;
+import org.apache.maven.execution.BuildFailure;
+import org.apache.maven.execution.MavenSession;
+import org.apache.maven.project.MavenProject;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.io.File;
+import java.util.Date;
 
 public class H2PluginStatsRepository implements PluginStatsRepository {
     private H2DatabaseManager h2DatabaseManager;
@@ -39,20 +43,48 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
 
     @Override
     public void save(PluginStats pluginStats) {
+        long buildId = findBuild(pluginStats);
         long projectId = findOrCreateProject(pluginStats);
         long pluginId = findOrCreatePlugin(pluginStats);
 
         if (pluginStats.type == PluginStats.Type.START) {
             jdbcTemplate.update(
-                    "insert into plugin_execution (project_id, plugin_id, goal, execution_id, execution_hashcode, start_time, result) values (?,?,?,?,?,?,?)",
-                    projectId, pluginId, pluginStats.plugin.goal, pluginStats.executionId, pluginStats.executionHashCode, pluginStats.timestamp, pluginStats.type.name()
+                    "insert into plugin_execution (project_id, plugin_id, goal, execution_id, execution_hashcode, start_time, result, build_id) values (?,?,?,?,?,?,?,?)",
+                    projectId, pluginId, pluginStats.plugin.goal, pluginStats.executionId, pluginStats.executionHashCode, pluginStats.timestamp, pluginStats.type.name(), buildId
             );
         } else {
             jdbcTemplate.update(
-                    "update plugin_execution set end_time=?,result=? where execution_hashcode=?",
-                    pluginStats.timestamp, pluginStats.type.name(), pluginStats.executionHashCode
+                    "update plugin_execution set end_time=?,result=? where execution_hashcode=? and build_id=?",
+                    pluginStats.timestamp, pluginStats.type.name(), pluginStats.executionHashCode, buildId
             );
         }
+    }
+
+    @Override
+    public void saveBuildStarted(MavenSession session) {
+        Date startTime = session.getRequest().getStartTime();
+        jdbcTemplate.update("insert into build (id, start_time) values (?,?)", startTime.getTime(), startTime);
+
+        for (MavenProject project : session.getProjects()) {
+            if (projectDoesNotExist(project.getGroupId(), project.getArtifactId(), project.getVersion())) {
+                insertProject(project.getGroupId(), project.getArtifactId(), project.getVersion());
+            }
+        }
+    }
+
+    @Override
+    public void saveBuildFinished(MavenSession session) {
+        boolean passing = true;
+        for (MavenProject project : session.getProjects()) {
+            if (session.getResult().getBuildSummary(project) instanceof BuildFailure) {
+                passing = false;
+                break;
+            }
+        }
+
+        Date startTime = session.getRequest().getStartTime();
+        jdbcTemplate.update("update build set end_time = ?, passed = ? where id = ?",
+                new Date(), passing ? 1 : 0, startTime.getTime());
     }
 
     private long findOrCreatePlugin(PluginStats pluginStats) {
@@ -85,22 +117,34 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
         String artifactId = pluginStats.project.artifactId;
         String version = pluginStats.project.version;
 
-        if (projectDoesNotExist(groupId, artifactId)) {
-            jdbcTemplate.update(
-                    "insert into project (group_id, artifact_id, version) values (?,?,?)",
-                    groupId, artifactId, version
-            );
+        if (projectDoesNotExist(groupId, artifactId, version)) {
+            insertProject(groupId, artifactId, version);
         }
+        return findProject(groupId, artifactId, version);
+    }
+
+    private long findProject(String groupId, String artifactId, String version) {
         return jdbcTemplate.queryForLong(
                 "select id from project where group_id = ? and artifact_id = ? and version = ?",
                 groupId, artifactId, version);
     }
 
-    private boolean projectDoesNotExist(String groupId, String artifactId) {
+    private void insertProject(String groupId, String artifactId, String version) {
+        jdbcTemplate.update(
+                "insert into project (group_id, artifact_id, version) values (?,?,?)",
+                groupId, artifactId, version
+        );
+    }
+
+    private boolean projectDoesNotExist(String groupId, String artifactId, String version) {
         return jdbcTemplate.queryForInt(
-                "select count(1) from project where group_id = ? and artifact_id = ?",
-                groupId, artifactId
+                "select count(1) from project where group_id = ? and artifact_id = ? and version = ?",
+                groupId, artifactId, version
         ) == 0;
+    }
+
+    private long findBuild(PluginStats pluginStats) {
+        return pluginStats.session.getRequest().getStartTime().getTime();
     }
 
     public void setH2DatabaseManager(H2DatabaseManager h2DatabaseManager) {

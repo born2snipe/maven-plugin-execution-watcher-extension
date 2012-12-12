@@ -15,7 +15,10 @@
 package org.apache.maven.eventspy;
 
 import org.apache.maven.eventspy.h2.H2PluginStatsRepository;
+import org.apache.maven.execution.DefaultMavenExecutionRequest;
+import org.apache.maven.execution.DefaultMavenExecutionResult;
 import org.apache.maven.execution.ExecutionEvent;
+import org.apache.maven.execution.MavenSession;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -69,15 +72,39 @@ public class PluginWatcherEventSpyTest {
 
     @Test
     public void onEvent_shouldIgnoreTypesThatAreNotMojoRelated() throws Exception {
-        expectToBeNotSaved(ExecutionEvent.Type.ForkedProjectFailed);
-        expectToBeNotSaved(ExecutionEvent.Type.MojoSkipped);
+        expectPluginStatsToBeNotSaved(ExecutionEvent.Type.ForkedProjectFailed);
+        expectPluginStatsToBeNotSaved(ExecutionEvent.Type.MojoSkipped);
     }
 
     @Test
     public void onEvent_shouldStoreWhenTheExecutionEventTypeIsMojoRelated() throws Exception {
-        expectToBeSaved(ExecutionEvent.Type.MojoSucceeded);
-        expectToBeSaved(ExecutionEvent.Type.MojoStarted);
-        expectToBeSaved(ExecutionEvent.Type.MojoFailed);
+        expectPluginStatsToBeSaved(ExecutionEvent.Type.MojoSucceeded);
+        expectPluginStatsToBeSaved(ExecutionEvent.Type.MojoStarted);
+        expectPluginStatsToBeSaved(ExecutionEvent.Type.MojoFailed);
+    }
+
+    @Test
+    public void onEvent_shouldStoreWhenASessionStarts() throws Exception {
+        MavenSession session = session();
+
+        expectEventType(ExecutionEvent.Type.SessionStarted);
+        when(executionEvent.getSession()).thenReturn(session);
+
+        spy.onEvent(executionEvent);
+
+        verify(statsRepository).saveBuildStarted(session);
+    }
+
+    @Test
+    public void onEvent_shouldStoreWhenASessionEnds() throws Exception {
+        MavenSession session = session();
+
+        expectEventType(ExecutionEvent.Type.SessionEnded);
+        when(executionEvent.getSession()).thenReturn(session);
+
+        spy.onEvent(executionEvent);
+
+        verify(statsRepository).saveBuildFinished(session);
     }
 
     @Test
@@ -108,7 +135,11 @@ public class PluginWatcherEventSpyTest {
         when(executionEvent.getType()).thenReturn(expectedType);
     }
 
-    private void expectToBeSaved(ExecutionEvent.Type expectedType) throws Exception {
+    private MavenSession session() {
+        return new MavenSession(null, null, new DefaultMavenExecutionRequest(), new DefaultMavenExecutionResult());
+    }
+
+    private void expectPluginStatsToBeSaved(ExecutionEvent.Type expectedType) throws Exception {
         PluginStats stats = new PluginStats();
 
         expectEventType(expectedType);
@@ -119,7 +150,7 @@ public class PluginWatcherEventSpyTest {
         verify(statsRepository).save(stats);
     }
 
-    private void expectToBeNotSaved(ExecutionEvent.Type expectedType) throws Exception {
+    private void expectPluginStatsToBeNotSaved(ExecutionEvent.Type expectedType) throws Exception {
         expectEventType(expectedType);
 
         spy.onEvent(executionEvent);

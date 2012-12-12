@@ -29,6 +29,7 @@ public class PluginStatsFactory {
         stats.project = buildProject(event);
         stats.plugin = buildPlugin(event);
         stats.executionHashCode = event.getMojoExecution().hashCode();
+        stats.session = event.getSession();
         return stats;
     }
 

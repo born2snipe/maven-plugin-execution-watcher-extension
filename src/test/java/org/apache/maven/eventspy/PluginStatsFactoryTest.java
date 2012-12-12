@@ -14,17 +14,20 @@
 
 package org.apache.maven.eventspy;
 
+import org.apache.maven.execution.DefaultMavenExecutionRequest;
+import org.apache.maven.execution.DefaultMavenExecutionResult;
 import org.apache.maven.execution.ExecutionEvent;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.project.MavenProject;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.*;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -35,6 +38,12 @@ public class PluginStatsFactoryTest {
     private ExecutionEvent event;
     @InjectMocks
     private PluginStatsFactory factory = new PluginStatsFactory();
+    private MavenSession session;
+
+    @Before
+    public void setUp() throws Exception {
+        session = new MavenSession(null, null, new DefaultMavenExecutionRequest(), new DefaultMavenExecutionResult());
+    }
 
     @Test
     public void build() {
@@ -51,6 +60,7 @@ public class PluginStatsFactoryTest {
         when(event.getType()).thenReturn(ExecutionEvent.Type.MojoSucceeded);
         when(event.getProject()).thenReturn(mavenProject);
         when(event.getMojoExecution()).thenReturn(mojoExecution);
+        when(event.getSession()).thenReturn(session);
 
         PluginStats stats = factory.build(event);
 
@@ -58,6 +68,7 @@ public class PluginStatsFactoryTest {
         assertEquals(PluginStats.Type.SUCCEED, stats.type);
         assertEquals("execution-id", stats.executionId);
         assertNotNull(stats.timestamp);
+        assertSame(session, stats.session);
 
         assertPlugin(stats);
         assertProject(stats);

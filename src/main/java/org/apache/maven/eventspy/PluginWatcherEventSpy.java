@@ -46,17 +46,29 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
     public void onEvent(Object event) throws Exception {
         if (shouldWatchPlugins() && event instanceof ExecutionEvent) {
             ExecutionEvent executionEvent = (ExecutionEvent) event;
-            if (shouldBeSaved(executionEvent)) {
+            if (isPluginRelated(executionEvent)) {
                 pluginStatsRepository.save(pluginStatsFactory.build(executionEvent));
+            } else if (isBuildStarting(executionEvent)) {
+                pluginStatsRepository.saveBuildStarted(executionEvent.getSession());
+            } else if (isBuildFinished(executionEvent)) {
+                pluginStatsRepository.saveBuildFinished(executionEvent.getSession());
             }
         }
+    }
+
+    private boolean isBuildFinished(ExecutionEvent executionEvent) {
+        return executionEvent.getType() == ExecutionEvent.Type.SessionEnded;
+    }
+
+    private boolean isBuildStarting(ExecutionEvent executionEvent) {
+        return executionEvent.getType() == ExecutionEvent.Type.SessionStarted;
     }
 
     private boolean shouldWatchPlugins() {
         return System.getProperties().containsKey(TURN_ON_KEY);
     }
 
-    private boolean shouldBeSaved(ExecutionEvent event) {
+    private boolean isPluginRelated(ExecutionEvent event) {
         ExecutionEvent.Type type = event.getType();
         switch (type) {
             case MojoSucceeded:

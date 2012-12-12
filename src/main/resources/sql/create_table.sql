@@ -19,6 +19,14 @@ create table plugin (
     version varchar(255)
 );
 
+create table build (
+    id long primary key,
+    start_time timestamp,
+    end_time timestamp,
+    elapsed_millis_time long as ABS(DATEDIFF('MILLISECOND', end_time, start_time)),
+    passed tinyint
+);
+
 create table project (
     id long primary key auto_increment,
     group_id varchar(255),
@@ -28,6 +36,7 @@ create table project (
 
 create table plugin_execution (
     id long primary key auto_increment,
+    build_id long,
     project_id long,
     plugin_id long,
     goal varchar(255),
@@ -38,6 +47,10 @@ create table plugin_execution (
     elapsed_millis_time long as ABS(DATEDIFF('MILLISECOND', end_time, start_time)),
     result varchar(255)
 );
+
+alter table plugin_execution
+    add constraint fk_plugin_execution_to_build
+        foreign key (build_id) references build(id);
 
 alter table plugin_execution
     add constraint fk_plugin_execution_to_project

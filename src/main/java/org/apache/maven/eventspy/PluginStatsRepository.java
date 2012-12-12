@@ -14,8 +14,14 @@
 
 package org.apache.maven.eventspy;
 
+import org.apache.maven.execution.MavenSession;
+
 public interface PluginStatsRepository {
     void initialize(EventSpy.Context context);
 
     void save(PluginStats pluginStats);
+
+    void saveBuildStarted(MavenSession session);
+
+    void saveBuildFinished(MavenSession session);
 }

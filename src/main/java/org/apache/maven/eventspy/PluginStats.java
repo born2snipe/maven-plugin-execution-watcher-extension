@@ -15,6 +15,7 @@
 package org.apache.maven.eventspy;
 
 import org.apache.maven.execution.ExecutionEvent;
+import org.apache.maven.execution.MavenSession;
 
 import java.util.Date;
 
@@ -25,6 +26,7 @@ public class PluginStats {
     public String executionId;
     public Date timestamp;
     public int executionHashCode;
+    public MavenSession session;
 
     public static enum Type {
         START(ExecutionEvent.Type.MojoStarted),
