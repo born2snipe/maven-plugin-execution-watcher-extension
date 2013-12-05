@@ -14,9 +14,11 @@
 
 package org.apache.maven.eventspy;
 
+import co.leantechniques.maven.PluginStatsFactory;
+import co.leantechniques.maven.PluginStatsRepository;
+import co.leantechniques.maven.flyway.NoOpLogCreator;
+import co.leantechniques.maven.h2.H2PluginStatsRepository;
 import com.googlecode.flyway.core.util.logging.LogFactory;
-import org.apache.maven.eventspy.flyway.NoOpLogCreator;
-import org.apache.maven.eventspy.h2.H2PluginStatsRepository;
 import org.apache.maven.execution.ExecutionEvent;
 import org.codehaus.plexus.component.annotations.Component;
 import org.openide.util.Lookup;

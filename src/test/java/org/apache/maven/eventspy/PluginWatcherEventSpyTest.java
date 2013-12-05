@@ -14,7 +14,10 @@
 
 package org.apache.maven.eventspy;
 
-import org.apache.maven.eventspy.h2.H2PluginStatsRepository;
+import co.leantechniques.maven.PluginStats;
+import co.leantechniques.maven.PluginStatsFactory;
+import co.leantechniques.maven.PluginStatsRepository;
+import co.leantechniques.maven.h2.H2PluginStatsRepository;
 import org.apache.maven.execution.DefaultMavenExecutionRequest;
 import org.apache.maven.execution.DefaultMavenExecutionResult;
 import org.apache.maven.execution.ExecutionEvent;
