@@ -18,7 +18,9 @@ import org.apache.maven.eventspy.PluginStats;
 import org.apache.maven.execution.*;
 import org.apache.maven.project.MavenProject;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.io.File;
@@ -29,6 +31,8 @@ import java.util.Date;
 import static junit.framework.Assert.assertEquals;
 
 public class H2PluginStatsRepositoryTest {
+    @Rule
+    public TemporaryFolder temporaryFolder = new TemporaryFolder();
     private H2PluginStatsRepository repository;
     private JdbcTemplate jdbc;
     private PluginStats pluginStats;
@@ -36,7 +40,7 @@ public class H2PluginStatsRepositoryTest {
 
     @Before
     public void setUp() throws Exception {
-        File directory = setupH2Directory();
+        File directory = temporaryFolder.newFolder("test-db");
 
         H2DatabaseManager databaseManager = new H2DatabaseManager(directory);
 
@@ -210,19 +214,6 @@ public class H2PluginStatsRepositoryTest {
         plugin.version = version;
         plugin.goal = goal;
         return plugin;
-    }
-
-    private File setupH2Directory() {
-        File directory = new File(System.getProperty("java.io.tmpdir"), "at");
-        directory.mkdirs();
-        cleanDirectory(directory);
-        assertEquals("the db directory should be empty. Are you sure the files are not locked?",
-                0, directory.listFiles().length);
-        return directory;
-    }
-
-    private void cleanDirectory(File directory) {
-        for (File file : directory.listFiles()) file.delete();
     }
 
     private void insertProject(String groupId, String artifactId, String version) {
