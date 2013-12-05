@@ -19,6 +19,8 @@ import org.apache.maven.execution.MavenSession;
 public interface PluginStatsRepository {
     void initialize(EventSpy.Context context);
 
+    void finished();
+
     void save(PluginStats pluginStats);
 
     void saveBuildStarted(MavenSession session, String additionalBuildData);

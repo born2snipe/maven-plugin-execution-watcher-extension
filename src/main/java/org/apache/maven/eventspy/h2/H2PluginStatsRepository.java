@@ -36,11 +36,15 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
 
     @Override
     public void initialize(EventSpy.Context context) {
-        if (h2DatabaseManager.doesDatabaseNotExist())
-            h2DatabaseManager.create();
-
         DBI dbi = new DBI(h2DatabaseManager.load());
         handle = dbi.open();
+    }
+
+    @Override
+    public void finished() {
+        if (handle != null) {
+            handle.close();
+        }
     }
 
     @Override

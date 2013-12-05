@@ -71,6 +71,7 @@ public class H2PluginStatsRepositoryTest {
     @After
     public void tearDown() throws Exception {
         handle.close();
+        repository.finished();
     }
 
     @Test
@@ -183,8 +184,8 @@ public class H2PluginStatsRepositoryTest {
 
     private void insertBuild() {
         handle.createStatement("insert into build (id) values (:id)")
-            .bind("id", session.getRequest().getStartTime().getTime())
-            .execute();
+                .bind("id", session.getRequest().getStartTime().getTime())
+                .execute();
     }
 
     private void assertExecution(String executionId, String goal, PluginStats.Type type) {

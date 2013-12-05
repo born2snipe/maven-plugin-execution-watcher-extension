@@ -14,64 +14,33 @@
 
 package org.apache.maven.eventspy.h2;
 
+import com.googlecode.flyway.core.Flyway;
 import org.h2.jdbcx.JdbcConnectionPool;
-import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.Handle;
 
 import javax.sql.DataSource;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 
 public class H2DatabaseManager {
     private static final Object LOCK = new Object();
     private File dbLocation;
     private DataSource cachedDataSource;
+    private Flyway flyway = new Flyway();
 
     public H2DatabaseManager(File dbLocation) {
         this.dbLocation = dbLocation;
         dbLocation.mkdirs();
     }
 
-
-    public boolean doesDatabaseNotExist() {
-        synchronized (LOCK) {
-            return dbLocation.listFiles().length == 0;
-        }
-    }
-
-    public void create() {
-        synchronized (LOCK) {
-            DBI dbi = new DBI(load());
-            Handle handle = dbi.open();
-            handle.createStatement(readCreateScript()).execute();
-            handle.close();
-        }
-    }
-
     public DataSource load() {
         synchronized (LOCK) {
             if (cachedDataSource == null) {
                 cachedDataSource = JdbcConnectionPool.create("jdbc:h2:" + dbLocation.getAbsolutePath() + "/stats;AUTO_SERVER=TRUE", "", "");
+                flyway.setDataSource(cachedDataSource);
+                flyway.setInitOnMigrate(true);
+                flyway.migrate();
             }
             return cachedDataSource;
         }
-    }
-
-    private String readCreateScript() {
-        StringBuilder builder = new StringBuilder();
-        byte[] buffer = new byte[1024];
-        int length = -1;
-
-        InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream("sql/create_table.sql");
-        try {
-            while ((length = input.read(buffer)) != -1) {
-                builder.append(new String(buffer, 0, length));
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return builder.toString();
     }
 
     public void setDirectoryOfRepository(File directoryOfRepository) {

@@ -22,7 +22,13 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.netbeans.api</groupId>
+            <groupId>com.googlecode.flyway</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>2.2.1</version>
+        </dependency>
+
+        <dependency>
+        <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-util-lookup</artifactId>
             <version>RELEASE721</version>
             <type>jar</type>
