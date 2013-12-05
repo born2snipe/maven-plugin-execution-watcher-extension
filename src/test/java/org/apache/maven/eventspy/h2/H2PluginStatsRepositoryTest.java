@@ -17,11 +17,13 @@ package org.apache.maven.eventspy.h2;
 import org.apache.maven.eventspy.PluginStats;
 import org.apache.maven.execution.*;
 import org.apache.maven.project.MavenProject;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.skife.jdbi.v2.DBI;
+import org.skife.jdbi.v2.Handle;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -34,9 +36,9 @@ public class H2PluginStatsRepositoryTest {
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
     private H2PluginStatsRepository repository;
-    private JdbcTemplate jdbc;
     private PluginStats pluginStats;
     private MavenSession session;
+    private Handle handle;
 
     @Before
     public void setUp() throws Exception {
@@ -48,7 +50,8 @@ public class H2PluginStatsRepositoryTest {
         repository.setH2DatabaseManager(databaseManager);
         repository.initialize(null);
 
-        jdbc = new JdbcTemplate(databaseManager.load());
+        DBI dbi = new DBI(databaseManager.load());
+        handle = dbi.open();
 
         session = new MavenSession(null, null, new DefaultMavenExecutionRequest(), new DefaultMavenExecutionResult());
         session.getRequest().setStartTime(new Date());
@@ -63,6 +66,11 @@ public class H2PluginStatsRepositoryTest {
         pluginStats.executionHashCode = 123;
         pluginStats.type = PluginStats.Type.START;
         pluginStats.session = session;
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        handle.close();
     }
 
     @Test
@@ -174,29 +182,43 @@ public class H2PluginStatsRepositoryTest {
     }
 
     private void insertBuild() {
-        jdbc.update("insert into build (id) values (?)", session.getRequest().getStartTime().getTime());
+        handle.createStatement("insert into build (id) values (:id)")
+            .bind("id", session.getRequest().getStartTime().getTime())
+            .execute();
     }
 
     private void assertExecution(String executionId, String goal, PluginStats.Type type) {
         long buildId = session.getRequest().getStartTime().getTime();
-        assertEquals("we should have insert an execution", 1, jdbc.queryForInt(
-                "select count(1) from plugin_execution where execution_id = ? and goal = ? and result = ? and start_time is not null and build_id = ?",
-                executionId, goal, type.name(), buildId
-        ));
+
+        int count = handle.createQuery("select count(1) from plugin_execution where execution_id = ? and goal = ? and result = ? and start_time is not null and build_id = ?")
+                .bind(0, executionId)
+                .bind(1, goal)
+                .bind(2, type.name())
+                .bind(3, buildId)
+                .mapTo(Integer.class)
+                .first();
+
+        assertEquals("we should have insert an execution", 1, count);
     }
 
-
     private void assertPlugin(String groupId, String artifactId, String version) {
-        assertEquals("we should have saved the plugin", 1, jdbc.queryForInt(
-                "select count(1) from plugin where group_id = ? and artifact_id = ? and version = ?",
-                groupId, artifactId, version
-        ));
+        int count = handle.createQuery("select count(1) from plugin where group_id = ? and artifact_id = ? and version = ?")
+                .bind(0, groupId)
+                .bind(1, artifactId)
+                .bind(2, version)
+                .mapTo(Integer.class)
+                .first();
+        assertEquals("we should have saved the plugin", 1, count);
     }
 
     private void assertProject(String groupId, String artifactId, String version) {
-        assertEquals("we should have saved the project", 1,
-                jdbc.queryForInt("select count(1) from project where group_id = ? " +
-                        "and artifact_id = ? and version =?", groupId, artifactId, version));
+        int count = handle.createQuery("select count(1) from project where group_id = ? and artifact_id = ? and version =?")
+                .bind(0, groupId)
+                .bind(1, artifactId)
+                .bind(2, version)
+                .mapTo(Integer.class)
+                .first();
+        assertEquals("we should have saved the project", 1, count);
     }
 
     private PluginStats.Project project(String groupId, String artifactId, String version) {
@@ -217,7 +239,11 @@ public class H2PluginStatsRepositoryTest {
     }
 
     private void insertProject(String groupId, String artifactId, String version) {
-        jdbc.update("insert into project (group_id, artifact_id, version) values (?,?,?)", groupId, artifactId, version);
+        handle.createStatement("insert into project (group_id, artifact_id, version) values (?,?,?)")
+                .bind(0, groupId)
+                .bind(1, artifactId)
+                .bind(2, version)
+                .execute();
     }
 
     private void assertStartOfBuild(MavenSession session, String buildData) {
@@ -227,17 +253,25 @@ public class H2PluginStatsRepositoryTest {
         }
 
         MavenProject topLevelProject = session.getTopLevelProject();
-        long projectId = jdbc.queryForLong("select id from project where group_id=? and artifact_id=? and version=?",
-                topLevelProject.getGroupId(), topLevelProject.getArtifactId(), topLevelProject.getVersion());
+        long projectId = handle.createQuery("select id from project where group_id=? and artifact_id=? and version=?")
+                .bind(0, topLevelProject.getGroupId())
+                .bind(1, topLevelProject.getArtifactId())
+                .bind(2, topLevelProject.getVersion())
+                .mapTo(Long.class)
+                .first();
 
         Date startTime = session.getRequest().getStartTime();
-        assertEquals(1, jdbc.queryForInt("select count(1) from build where id = ? and start_time = ? and passed is null and goals = ? and top_level_project_id = ? and data = ?",
-                startTime.getTime(),
-                startTime,
-                goals.trim(),
-                projectId,
-                buildData
-        ));
+
+        int count = handle.createQuery("select count(1) from build where id = ? and start_time = ? and passed is null and goals = ? and top_level_project_id = ? and data = ?")
+                .bind(0, startTime.getTime())
+                .bind(1, startTime)
+                .bind(2, goals.trim())
+                .bind(3, projectId)
+                .bind(4, buildData)
+                .mapTo(Integer.class)
+                .first();
+
+        assertEquals(1, count);
     }
 
     private MavenProject mavenProject(String groupId, String artifactId, String version) {
@@ -250,6 +284,14 @@ public class H2PluginStatsRepositoryTest {
 
     private void assertEndOfBuild(MavenSession session, boolean passed) {
         Date startTime = session.getRequest().getStartTime();
-        assertEquals(1, jdbc.queryForInt("select count(1) from build where id =? and end_time is not null and passed = ?", startTime.getTime(), passed ? 1 : 0));
+
+
+        int count = handle.createQuery("select count(1) from build where id =? and end_time is not null and passed = ?")
+                .bind(0, startTime.getTime())
+                .bind(1, passed ? 1 : 0)
+                .mapTo(Integer.class)
+                .first();
+
+        assertEquals(1, count);
     }
 }

@@ -43,7 +43,6 @@ public class H2PluginStatsRepositoryInitializeTest {
 
         repository.initialize(null);
 
-        assertNotNull(repository.getJdbcTemplate());
         verify(databaseManager, never()).create();
     }
 
@@ -55,6 +54,5 @@ public class H2PluginStatsRepositoryInitializeTest {
         repository.initialize(null);
 
         verify(databaseManager).create();
-        assertNotNull(repository.getJdbcTemplate());
     }
 }

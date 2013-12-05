@@ -20,14 +20,15 @@ import org.apache.maven.eventspy.PluginStatsRepository;
 import org.apache.maven.execution.BuildFailure;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.project.MavenProject;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.skife.jdbi.v2.DBI;
+import org.skife.jdbi.v2.Handle;
 
 import java.io.File;
 import java.util.Date;
 
 public class H2PluginStatsRepository implements PluginStatsRepository {
     private H2DatabaseManager h2DatabaseManager;
-    private JdbcTemplate jdbcTemplate;
+    private Handle handle;
 
     public H2PluginStatsRepository(File dbLocation) {
         h2DatabaseManager = new H2DatabaseManager(dbLocation);
@@ -38,7 +39,8 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
         if (h2DatabaseManager.doesDatabaseNotExist())
             h2DatabaseManager.create();
 
-        jdbcTemplate = new JdbcTemplate(h2DatabaseManager.load());
+        DBI dbi = new DBI(h2DatabaseManager.load());
+        handle = dbi.open();
     }
 
     @Override
@@ -48,15 +50,24 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
         long pluginId = findOrCreatePlugin(pluginStats);
 
         if (pluginStats.type == PluginStats.Type.START) {
-            jdbcTemplate.update(
-                    "insert into plugin_execution (project_id, plugin_id, goal, execution_id, execution_hashcode, start_time, result, build_id) values (?,?,?,?,?,?,?,?)",
-                    projectId, pluginId, pluginStats.plugin.goal, pluginStats.executionId, pluginStats.executionHashCode, pluginStats.timestamp, pluginStats.type.name(), buildId
-            );
+            handle.createStatement("insert into plugin_execution (project_id, plugin_id, goal, execution_id, execution_hashcode, start_time, result, build_id) values (?,?,?,?,?,?,?,?)")
+                    .bind(0, projectId)
+                    .bind(1, pluginId)
+                    .bind(2, pluginStats.plugin.goal)
+                    .bind(3, pluginStats.executionId)
+                    .bind(4, pluginStats.executionHashCode)
+                    .bind(5, pluginStats.timestamp)
+                    .bind(6, pluginStats.type.name())
+                    .bind(7, buildId)
+                    .execute();
         } else {
-            jdbcTemplate.update(
-                    "update plugin_execution set end_time=?,result=? where execution_hashcode=? and build_id=?",
-                    pluginStats.timestamp, pluginStats.type.name(), pluginStats.executionHashCode, buildId
-            );
+            handle.createStatement("update plugin_execution set end_time=?,result=? where execution_hashcode=? and build_id=?")
+                    .bind(0, pluginStats.timestamp)
+                    .bind(1, pluginStats.type.name())
+                    .bind(2, pluginStats.executionHashCode)
+                    .bind(3, buildId)
+                    .execute();
+
         }
     }
 
@@ -75,8 +86,14 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
         Date startTime = session.getRequest().getStartTime();
         MavenProject topLevelProject = session.getTopLevelProject();
         long projectId = findProject(topLevelProject.getGroupId(), topLevelProject.getArtifactId(), topLevelProject.getVersion());
-        jdbcTemplate.update("insert into build (id, start_time, goals, top_level_project_id, data) values (?,?,?,?,?)",
-                startTime.getTime(), startTime, goals.trim(), projectId, additionalBuildData);
+
+        handle.createStatement("insert into build (id, start_time, goals, top_level_project_id, data) values (?,?,?,?,?)")
+                .bind(0, startTime.getTime())
+                .bind(1, startTime)
+                .bind(2, goals.trim())
+                .bind(3, projectId)
+                .bind(4, additionalBuildData)
+                .execute();
     }
 
     @Override
@@ -90,8 +107,11 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
         }
 
         Date startTime = session.getRequest().getStartTime();
-        jdbcTemplate.update("update build set end_time = ?, passed = ? where id = ?",
-                new Date(), passing ? 1 : 0, startTime.getTime());
+        handle.createStatement("update build set end_time = ?, passed = ? where id = ?")
+                .bind(0, new Date())
+                .bind(1, passing ? 1 : 0)
+                .bind(2, startTime.getTime())
+                .execute();
     }
 
     private long findOrCreatePlugin(PluginStats pluginStats) {
@@ -100,23 +120,28 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
         String version = pluginStats.plugin.version;
 
         if (pluginDoesNotExist(groupId, artifactId, version)) {
-            jdbcTemplate.update(
-                    "insert into plugin (group_id, artifact_id, version) values (?,?,?)",
-                    groupId, artifactId, version
-            );
+            handle.createStatement("insert into plugin (group_id, artifact_id, version) values (?,?,?)")
+                    .bind(0, groupId)
+                    .bind(1, artifactId)
+                    .bind(2, version)
+                    .execute();
         }
 
-        return jdbcTemplate.queryForLong(
-                "select id from plugin where group_id = ? and artifact_id = ? and version = ?",
-                groupId, artifactId, version
-        );
+        return handle.createQuery("select id from plugin where group_id = ? and artifact_id = ? and version = ?")
+                .bind(0, groupId)
+                .bind(1, artifactId)
+                .bind(2, version)
+                .mapTo(Long.class)
+                .first();
     }
 
     private boolean pluginDoesNotExist(String groupId, String artifactId, String version) {
-        return jdbcTemplate.queryForInt(
-                "select count(1) from plugin where group_id = ? and artifact_id = ? and version = ?",
-                groupId, artifactId, version
-        ) == 0;
+        return handle.createQuery("select count(1) from plugin where group_id = ? and artifact_id = ? and version = ?")
+                .bind(0, groupId)
+                .bind(1, artifactId)
+                .bind(2, version)
+                .mapTo(Integer.class)
+                .first() == 0;
     }
 
     private long findOrCreateProject(PluginStats pluginStats) {
@@ -131,23 +156,29 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
     }
 
     private long findProject(String groupId, String artifactId, String version) {
-        return jdbcTemplate.queryForLong(
-                "select id from project where group_id = ? and artifact_id = ? and version = ?",
-                groupId, artifactId, version);
+        return handle.createQuery("select id from project where group_id = ? and artifact_id = ? and version = ?")
+                .bind(0, groupId)
+                .bind(1, artifactId)
+                .bind(2, version)
+                .mapTo(Long.class)
+                .first();
     }
 
     private void insertProject(String groupId, String artifactId, String version) {
-        jdbcTemplate.update(
-                "insert into project (group_id, artifact_id, version) values (?,?,?)",
-                groupId, artifactId, version
-        );
+        handle.createStatement("insert into project (group_id, artifact_id, version) values (?,?,?)")
+                .bind(0, groupId)
+                .bind(1, artifactId)
+                .bind(2, version)
+                .execute();
     }
 
     private boolean projectDoesNotExist(String groupId, String artifactId, String version) {
-        return jdbcTemplate.queryForInt(
-                "select count(1) from project where group_id = ? and artifact_id = ? and version = ?",
-                groupId, artifactId, version
-        ) == 0;
+        return handle.createQuery("select count(1) from project where group_id = ? and artifact_id = ? and version = ?")
+                .bind(0, groupId)
+                .bind(1, artifactId)
+                .bind(2, version)
+                .mapTo(Integer.class)
+                .first() == 0;
     }
 
     private long findBuild(PluginStats pluginStats) {
@@ -158,7 +189,4 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
         this.h2DatabaseManager = h2DatabaseManager;
     }
 
-    public JdbcTemplate getJdbcTemplate() {
-        return jdbcTemplate;
-    }
 }

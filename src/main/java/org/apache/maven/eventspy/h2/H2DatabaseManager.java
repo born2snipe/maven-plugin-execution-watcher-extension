@@ -14,9 +14,9 @@
 
 package org.apache.maven.eventspy.h2;
 
-import org.h2.Driver;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.h2.jdbcx.JdbcConnectionPool;
+import org.skife.jdbi.v2.DBI;
+import org.skife.jdbi.v2.Handle;
 
 import javax.sql.DataSource;
 import java.io.File;
@@ -42,18 +42,17 @@ public class H2DatabaseManager {
 
     public void create() {
         synchronized (LOCK) {
-            JdbcTemplate jdbc = new JdbcTemplate(load());
-            jdbc.execute(readCreateScript());
+            DBI dbi = new DBI(load());
+            Handle handle = dbi.open();
+            handle.createStatement(readCreateScript()).execute();
+            handle.close();
         }
     }
 
     public DataSource load() {
         synchronized (LOCK) {
             if (cachedDataSource == null) {
-                DriverManagerDataSource dataSource = new DriverManagerDataSource();
-                dataSource.setDriverClassName(Driver.class.getName());
-                dataSource.setUrl("jdbc:h2:" + dbLocation.getAbsolutePath() + "/stats;AUTO_SERVER=TRUE");
-                cachedDataSource = dataSource;
+                cachedDataSource = JdbcConnectionPool.create("jdbc:h2:" + dbLocation.getAbsolutePath() + "/stats;AUTO_SERVER=TRUE", "", "");
             }
             return cachedDataSource;
         }
