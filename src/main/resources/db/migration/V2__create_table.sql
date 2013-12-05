@@ -51,7 +51,7 @@ create table if not exists plugin_execution (
     result varchar(255)
 );
 
--- drop the old constraints and re-add them since H2 does not support conditional contraint adding
+-- drop the old constraints and re-add them since H2 does not support conditional constraint adding
 alter table build drop constraint if exists fk_build_to_project;
 alter table plugin_execution drop constraint if exists fk_plugin_execution_to_build;
 alter table plugin_execution drop constraint if exists fk_plugin_execution_to_project;
