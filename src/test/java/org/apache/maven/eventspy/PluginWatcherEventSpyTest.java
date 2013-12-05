@@ -50,6 +50,8 @@ public class PluginWatcherEventSpyTest {
     @Before
     public void setUp() throws Exception {
         System.setProperty(PluginWatcherEventSpy.TURN_ON_KEY, "");
+        System.getProperties().remove("plugin.execution.watcher.build.data");
+
         session = session();
 
         when(executionEvent.getSession()).thenReturn(session);
