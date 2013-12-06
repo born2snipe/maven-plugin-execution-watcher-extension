@@ -49,10 +49,11 @@ public class PluginWatcherEventSpyIntegrationTest {
     }
 
     @Test
-    public void shouldSupportStoringFailedBuilds() throws Exception {
+    public void shouldSupportNotStoringFailingBuilds() throws Exception {
         simulateFailingBuild();
 
-        assertBuildInfoStored(false);
+        testRepository.assertNoPluginExecutionsAreStored();
+        testRepository.assertNoBuildIsStored();
     }
 
     @Test

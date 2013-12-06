@@ -73,7 +73,8 @@ public class H2PluginStatsRepositoryTest {
         repository.saveBuildStarted(session, "build-data");
         repository.saveBuildFinished(session);
 
-        testRepository.assertEndOfBuild(session, false);
+        testRepository.assertNoBuildIsStored();
+        testRepository.assertNoPluginExecutionsAreStored();
     }
 
     @Test

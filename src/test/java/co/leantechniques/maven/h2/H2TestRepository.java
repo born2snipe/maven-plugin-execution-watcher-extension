@@ -124,4 +124,14 @@ public class H2TestRepository {
 
         assertEquals(1, count);
     }
+
+    public void assertNoPluginExecutionsAreStored() {
+        int count = handle.createQuery("select count(1) from plugin_execution").mapTo(Integer.class).first();
+        assertEquals("we should have not found any plugin executions", 0, count);
+    }
+
+    public void assertNoBuildIsStored() {
+        int count = handle.createQuery("select count(1) from build").mapTo(Integer.class).first();
+        assertEquals("we should have not found any build", 0, count);
+    }
 }

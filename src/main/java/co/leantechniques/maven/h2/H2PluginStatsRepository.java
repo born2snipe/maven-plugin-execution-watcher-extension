@@ -110,12 +110,17 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
             }
         }
 
-        Date startTime = session.getRequest().getStartTime();
-        handle.createStatement("update build set end_time = ?, passed = ? where id = ?")
-                .bind(0, new Date())
-                .bind(1, passing ? 1 : 0)
-                .bind(2, startTime.getTime())
-                .execute();
+        long buildId = session.getRequest().getStartTime().getTime();
+        if (passing) {
+            handle.createStatement("update build set end_time = ?, passed = ? where id = ?")
+                    .bind(0, new Date())
+                    .bind(1, passing ? 1 : 0)
+                    .bind(2, buildId)
+                    .execute();
+        } else {
+            handle.createStatement("delete from plugin_execution where build_id = ?").bind(0, buildId).execute();
+            handle.createStatement("delete from build where id = ?").bind(0, buildId).execute();
+        }
     }
 
     private long findOrCreatePlugin(PluginStats pluginStats) {
