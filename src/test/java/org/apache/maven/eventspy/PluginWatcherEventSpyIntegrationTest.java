@@ -38,8 +38,6 @@ public class PluginWatcherEventSpyIntegrationTest extends AbstractDatabaseTest {
 
         eventSpy = new PluginWatcherEventSpy();
         sessionBuilder = new MavenSessionBuilder(startTime);
-
-        System.setProperty(PluginWatcherEventSpy.TURN_ON_KEY, "true");
     }
 
     @Test

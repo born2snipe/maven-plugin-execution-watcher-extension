@@ -21,7 +21,6 @@ import org.codehaus.plexus.component.annotations.Component;
 
 @Component(role = EventSpy.class)
 public class PluginWatcherEventSpy extends AbstractEventSpy {
-    public static final String TURN_ON_KEY = "plugin.execution.watcher";
     public static final String BUILD_DATA_KEY = "plugin.execution.watcher.build.data";
 
     private PluginStatsFactory pluginStatsFactory = new PluginStatsFactory();
@@ -30,15 +29,13 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
 
     @Override
     public void init(Context context) throws Exception {
-        if (shouldWatchPlugins()) {
-            pluginStatsRepository = pluginStatsRepositoryProvider.provide();
-            pluginStatsRepository.initialize(context);
-        }
+        pluginStatsRepository = pluginStatsRepositoryProvider.provide();
+        pluginStatsRepository.initialize(context);
     }
 
     @Override
     public void onEvent(Object event) throws Exception {
-        if (shouldWatchPlugins() && event instanceof ExecutionEvent) {
+        if (event instanceof ExecutionEvent) {
             ExecutionEvent executionEvent = (ExecutionEvent) event;
             if (isPluginRelated(executionEvent)) {
                 pluginStatsRepository.save(pluginStatsFactory.build(executionEvent));
@@ -56,10 +53,6 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
 
     private boolean isBuildStarting(ExecutionEvent executionEvent) {
         return executionEvent.getType() == ExecutionEvent.Type.SessionStarted;
-    }
-
-    private boolean shouldWatchPlugins() {
-        return System.getProperties().containsKey(TURN_ON_KEY);
     }
 
     private boolean isPluginRelated(ExecutionEvent event) {

@@ -5,7 +5,6 @@ This maven extension logs all plugin executions to a H2 database. This allows fo
 ## Setup
 - Download the latest jar file
 - Put the jar file in your maven's `lib/ext` directory. Maven auto-magically puts these jars in the classpath.
-- When you execute the `mvn` command from the command line also provide the following system property switch of `plugin.execution.watcher`
 - The data is stored in a local H2 database in `${user.home}/.m2-plugin-execution-watcher`. To view the data you just need a JDBC friendly database viewer.
 
 ## FAQ

@@ -46,31 +46,11 @@ public class PluginWatcherEventSpyTest {
 
     @Before
     public void setUp() throws Exception {
-        System.setProperty(PluginWatcherEventSpy.TURN_ON_KEY, "");
         System.getProperties().remove("plugin.execution.watcher.build.data");
 
         executionEventBuilder = new ExecutionEventBuilder();
 
         when(pluginStatsRepositoryProvider.provide()).thenReturn(statsRepository);
-    }
-
-    @Test
-    public void onEvent_shouldDoNothingIfTHeTriggerPropertyIsNotGiven() throws Exception {
-        System.getProperties().remove(PluginWatcherEventSpy.TURN_ON_KEY);
-
-        spy.onEvent(executionEventBuilder.toEvent());
-
-        verifyZeroInteractions(statsRepository, pluginStatsFactory);
-    }
-
-    @Test
-    public void init_shouldDoNothingIfTheTriggerPropertyIsNotGiven() throws Exception {
-        System.getProperties().remove(PluginWatcherEventSpy.TURN_ON_KEY);
-        when(lookup.lookup(PluginStatsRepository.class)).thenReturn(statsRepository);
-
-        spy.init(context);
-
-        verifyZeroInteractions(statsRepository);
     }
 
     @Test
