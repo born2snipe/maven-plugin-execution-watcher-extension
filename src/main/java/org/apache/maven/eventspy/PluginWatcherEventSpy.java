@@ -16,6 +16,7 @@ package org.apache.maven.eventspy;
 
 import co.leantechniques.maven.PluginStatsFactory;
 import co.leantechniques.maven.PluginStatsRepository;
+import co.leantechniques.maven.PluginStatsRepositoryProvider;
 import org.apache.maven.execution.ExecutionEvent;
 import org.codehaus.plexus.component.annotations.Component;
 

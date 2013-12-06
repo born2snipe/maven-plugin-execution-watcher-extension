@@ -17,6 +17,7 @@ package org.apache.maven.eventspy;
 import co.leantechniques.maven.PluginStats;
 import co.leantechniques.maven.PluginStatsFactory;
 import co.leantechniques.maven.PluginStatsRepository;
+import co.leantechniques.maven.PluginStatsRepositoryProvider;
 import org.apache.maven.execution.ExecutionEvent;
 import org.junit.Before;
 import org.junit.Test;
