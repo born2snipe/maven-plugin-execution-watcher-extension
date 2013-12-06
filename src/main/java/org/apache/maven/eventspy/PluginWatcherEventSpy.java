@@ -16,9 +16,7 @@ package org.apache.maven.eventspy;
 
 import co.leantechniques.maven.PluginStatsFactory;
 import co.leantechniques.maven.PluginStatsRepository;
-import co.leantechniques.maven.flyway.NoOpLogCreator;
 import co.leantechniques.maven.h2.H2PluginStatsRepository;
-import com.googlecode.flyway.core.util.logging.LogFactory;
 import org.apache.maven.execution.ExecutionEvent;
 import org.codehaus.plexus.component.annotations.Component;
 import org.openide.util.Lookup;
@@ -38,7 +36,6 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
 
     @Override
     public void init(Context context) throws Exception {
-        LogFactory.setLogCreator(new NoOpLogCreator());
         if (shouldWatchPlugins()) {
             pluginStatsRepository = lookup.lookup(PluginStatsRepository.class);
             if (pluginStatsRepository == null) {

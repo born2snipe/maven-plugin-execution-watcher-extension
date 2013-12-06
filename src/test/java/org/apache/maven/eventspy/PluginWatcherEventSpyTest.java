@@ -18,10 +18,7 @@ import co.leantechniques.maven.PluginStats;
 import co.leantechniques.maven.PluginStatsFactory;
 import co.leantechniques.maven.PluginStatsRepository;
 import co.leantechniques.maven.h2.H2PluginStatsRepository;
-import org.apache.maven.execution.DefaultMavenExecutionRequest;
-import org.apache.maven.execution.DefaultMavenExecutionResult;
 import org.apache.maven.execution.ExecutionEvent;
-import org.apache.maven.execution.MavenSession;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,30 +38,26 @@ public class PluginWatcherEventSpyTest {
     @Mock
     EventSpy.Context context;
     @Mock
-    ExecutionEvent executionEvent;
-    @Mock
     private PluginStatsRepository statsRepository;
     @Mock
     private Lookup lookup;
     @InjectMocks
     private PluginWatcherEventSpy spy = new PluginWatcherEventSpy();
-    private MavenSession session;
+    private ExecutionEventBuilder executionEventBuilder;
 
     @Before
     public void setUp() throws Exception {
         System.setProperty(PluginWatcherEventSpy.TURN_ON_KEY, "");
         System.getProperties().remove("plugin.execution.watcher.build.data");
 
-        session = session();
-
-        when(executionEvent.getSession()).thenReturn(session);
+        executionEventBuilder = new ExecutionEventBuilder();
     }
 
     @Test
     public void onEvent_shouldDoNothingIfTHeTriggerPropertyIsNotGiven() throws Exception {
         System.getProperties().remove(PluginWatcherEventSpy.TURN_ON_KEY);
 
-        spy.onEvent(executionEvent);
+        spy.onEvent(executionEventBuilder.toEvent());
 
         verifyZeroInteractions(statsRepository, pluginStatsFactory);
     }
@@ -96,29 +89,32 @@ public class PluginWatcherEventSpyTest {
     public void onEvent_shouldStoreWhenASessionStarts_withAdditionalBuildData() throws Exception {
         System.setProperty("plugin.execution.watcher.build.data", "build-data");
 
-        expectEventType(ExecutionEvent.Type.SessionStarted);
+        executionEventBuilder.expectEventType(ExecutionEvent.Type.SessionStarted);
+        ExecutionEvent event = executionEventBuilder.toEvent();
 
-        spy.onEvent(executionEvent);
+        spy.onEvent(event);
 
-        verify(statsRepository).saveBuildStarted(session, "build-data");
+        verify(statsRepository).saveBuildStarted(event.getSession(), "build-data");
     }
 
     @Test
     public void onEvent_shouldStoreWhenASessionStarts() throws Exception {
-        expectEventType(ExecutionEvent.Type.SessionStarted);
+        executionEventBuilder.expectEventType(ExecutionEvent.Type.SessionStarted);
+        ExecutionEvent event = executionEventBuilder.toEvent();
 
-        spy.onEvent(executionEvent);
+        spy.onEvent(event);
 
-        verify(statsRepository).saveBuildStarted(session, null);
+        verify(statsRepository).saveBuildStarted(event.getSession(), null);
     }
 
     @Test
     public void onEvent_shouldStoreWhenASessionEnds() throws Exception {
-        expectEventType(ExecutionEvent.Type.SessionEnded);
+        executionEventBuilder.expectEventType(ExecutionEvent.Type.SessionEnded);
+        ExecutionEvent event = executionEventBuilder.toEvent();
 
-        spy.onEvent(executionEvent);
+        spy.onEvent(event);
 
-        verify(statsRepository).saveBuildFinished(session);
+        verify(statsRepository).saveBuildFinished(event.getSession());
     }
 
     @Test
@@ -145,29 +141,23 @@ public class PluginWatcherEventSpyTest {
         assertTrue(spy.getPluginStatsRepository() instanceof H2PluginStatsRepository);
     }
 
-    private void expectEventType(ExecutionEvent.Type expectedType) {
-        when(executionEvent.getType()).thenReturn(expectedType);
-    }
-
-    private MavenSession session() {
-        return new MavenSession(null, null, new DefaultMavenExecutionRequest(), new DefaultMavenExecutionResult());
-    }
-
     private void expectPluginStatsToBeSaved(ExecutionEvent.Type expectedType) throws Exception {
         PluginStats stats = new PluginStats();
 
-        expectEventType(expectedType);
-        when(pluginStatsFactory.build(executionEvent)).thenReturn(stats);
+        executionEventBuilder.expectEventType(expectedType);
+        ExecutionEvent event = executionEventBuilder.toEvent();
 
-        spy.onEvent(executionEvent);
+        when(pluginStatsFactory.build(event)).thenReturn(stats);
+
+        spy.onEvent(event);
 
         verify(statsRepository).save(stats);
     }
 
     private void expectPluginStatsToBeNotSaved(ExecutionEvent.Type expectedType) throws Exception {
-        expectEventType(expectedType);
+        executionEventBuilder.expectEventType(expectedType);
 
-        spy.onEvent(executionEvent);
+        spy.onEvent(executionEventBuilder.toEvent());
 
         verifyZeroInteractions(statsRepository, pluginStatsFactory);
     }
