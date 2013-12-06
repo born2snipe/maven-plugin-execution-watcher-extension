@@ -29,6 +29,9 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
 
     @Override
     public void init(Context context) throws Exception {
+        System.out.println("------------------------------------------------------------------------");
+        System.out.println(" TRACKING BUILD STATS");
+        System.out.println("------------------------------------------------------------------------");
         pluginStatsRepository = pluginStatsRepositoryProvider.provide();
         pluginStatsRepository.initialize(context);
     }
