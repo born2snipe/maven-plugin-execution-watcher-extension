@@ -17,7 +17,6 @@ package org.apache.maven.eventspy;
 import co.leantechniques.maven.PluginStats;
 import co.leantechniques.maven.PluginStatsFactory;
 import co.leantechniques.maven.PluginStatsRepository;
-import co.leantechniques.maven.h2.H2PluginStatsRepository;
 import org.apache.maven.execution.ExecutionEvent;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,12 +26,12 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.openide.util.Lookup;
 
-import static junit.framework.Assert.assertSame;
-import static junit.framework.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class PluginWatcherEventSpyTest {
+    @Mock
+    private PluginStatsRepositoryProvider pluginStatsRepositoryProvider;
     @Mock
     PluginStatsFactory pluginStatsFactory;
     @Mock
@@ -51,6 +50,8 @@ public class PluginWatcherEventSpyTest {
         System.getProperties().remove("plugin.execution.watcher.build.data");
 
         executionEventBuilder = new ExecutionEventBuilder();
+
+        when(pluginStatsRepositoryProvider.provide()).thenReturn(statsRepository);
     }
 
     @Test
@@ -126,19 +127,9 @@ public class PluginWatcherEventSpyTest {
 
     @Test
     public void init_shouldUseTheProvidedStatRepositoryFound() throws Exception {
-        when(lookup.lookup(PluginStatsRepository.class)).thenReturn(statsRepository);
-
         spy.init(context);
 
-        assertSame(statsRepository, spy.getPluginStatsRepository());
         verify(statsRepository).initialize(context);
-    }
-
-    @Test
-    public void init_shouldDefaultToH2WhenNothingElseIsFound() throws Exception {
-        spy.init(context);
-
-        assertTrue(spy.getPluginStatsRepository() instanceof H2PluginStatsRepository);
     }
 
     private void expectPluginStatsToBeSaved(ExecutionEvent.Type expectedType) throws Exception {

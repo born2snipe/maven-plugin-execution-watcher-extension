@@ -16,27 +16,22 @@ package org.apache.maven.eventspy;
 
 import co.leantechniques.maven.PluginStatsFactory;
 import co.leantechniques.maven.PluginStatsRepository;
-import co.leantechniques.maven.h2.H2PluginStatsRepository;
 import org.apache.maven.execution.ExecutionEvent;
 import org.codehaus.plexus.component.annotations.Component;
-import org.openide.util.Lookup;
 
 @Component(role = EventSpy.class)
 public class PluginWatcherEventSpy extends AbstractEventSpy {
     public static final String TURN_ON_KEY = "plugin.execution.watcher";
     public static final String BUILD_DATA_KEY = "plugin.execution.watcher.build.data";
 
-    private Lookup lookup = Lookup.getDefault();
-    private PluginStatsRepository pluginStatsRepository;
     private PluginStatsFactory pluginStatsFactory = new PluginStatsFactory();
+    private PluginStatsRepositoryProvider pluginStatsRepositoryProvider = new PluginStatsRepositoryProvider();
+    private PluginStatsRepository pluginStatsRepository;
 
     @Override
     public void init(Context context) throws Exception {
         if (shouldWatchPlugins()) {
-            pluginStatsRepository = lookup.lookup(PluginStatsRepository.class);
-            if (pluginStatsRepository == null) {
-                pluginStatsRepository = new H2PluginStatsRepository();
-            }
+            pluginStatsRepository = pluginStatsRepositoryProvider.provide();
             pluginStatsRepository.initialize(context);
         }
     }
@@ -76,9 +71,5 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
                 return true;
         }
         return false;
-    }
-
-    protected PluginStatsRepository getPluginStatsRepository() {
-        return pluginStatsRepository;
     }
 }
