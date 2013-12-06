@@ -18,9 +18,11 @@ import org.apache.maven.execution.MavenSession;
 import org.apache.maven.project.MavenProject;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
+import org.skife.jdbi.v2.Query;
 
 import javax.sql.DataSource;
 import java.util.Date;
+import java.util.Map;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
@@ -100,14 +102,24 @@ public class H2TestRepository {
 
         Date startTime = session.getRequest().getStartTime();
 
-        int count = handle.createQuery("select count(1) from build where id = ? and start_time = ? and passed is null and goals = ? and top_level_project_id = ? and data = ?")
+        StringBuilder sql = new StringBuilder("select count(1) from build where id = ? and start_time = ? and passed is null and goals = ? and top_level_project_id = ? and data ");
+        if (buildData == null) {
+            sql.append("is null");
+        } else {
+            sql.append(" = ?");
+        }
+
+        Query<Map<String, Object>> query = handle.createQuery(sql.toString())
                 .bind(0, startTime.getTime())
                 .bind(1, startTime)
                 .bind(2, goals.trim())
-                .bind(3, projectId)
-                .bind(4, buildData)
-                .mapTo(Integer.class)
-                .first();
+                .bind(3, projectId);
+
+        if (buildData != null) {
+            query.bind(4, buildData);
+        }
+
+        int count = query.mapTo(Integer.class).first();
 
         assertTrue("No build was found or did the build finish?", count > 0);
         assertEquals("Apparently we inserted more than one instance of the build in the database", 1, count);

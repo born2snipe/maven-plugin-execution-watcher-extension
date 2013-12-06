@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.util.Calendar;
 import java.util.Date;
 
 public class PluginWatcherEventSpyIntegrationTest {
@@ -49,6 +50,25 @@ public class PluginWatcherEventSpyIntegrationTest {
     }
 
     @Test
+    public void shouldSupportDeletingPartialBuildsWhenTheNextBuildStarts() throws Exception {
+        simulateBuildKilledByUserWhileInTheMiddleOfTheBuild(yesterday());
+
+        eventSpy.init(null);
+
+        testRepository.assertNoPluginExecutionsAreStored();
+        testRepository.assertNoBuildIsStored();
+    }
+
+    @Test
+    public void shouldNotDeletePartialBuildsThatWereCreatedOnTheSameDayToPreventPossibleCollisionsOfMultipleBuildsRunningAtTheSameTime() throws Exception {
+        simulateBuildKilledByUserWhileInTheMiddleOfTheBuild(today());
+
+        eventSpy.init(null);
+
+        testRepository.assertStartOfBuild(sessionBuilder.toSession(), null);
+    }
+
+    @Test
     public void shouldSupportNotStoringFailingBuilds() throws Exception {
         simulateFailingBuild();
 
@@ -61,6 +81,34 @@ public class PluginWatcherEventSpyIntegrationTest {
         simulateSuccessfulBuild();
 
         assertBuildInfoStored(true);
+    }
+
+    private Date today() {
+        Calendar instance = Calendar.getInstance();
+        instance.set(Calendar.HOUR_OF_DAY, 0);
+        instance.set(Calendar.MINUTE, 0);
+        instance.set(Calendar.SECOND, 0);
+        instance.set(Calendar.MILLISECOND, 0);
+        return new Date(instance.getTimeInMillis());
+    }
+
+    private Date yesterday() {
+        Calendar instance = Calendar.getInstance();
+        instance.set(Calendar.HOUR_OF_DAY, 23);
+        instance.set(Calendar.MINUTE, 59);
+        instance.set(Calendar.SECOND, 59);
+        instance.set(Calendar.MILLISECOND, 999);
+        instance.add(Calendar.DAY_OF_YEAR, -1);
+        return new Date(instance.getTimeInMillis());
+    }
+
+    private void simulateBuildKilledByUserWhileInTheMiddleOfTheBuild(Date dateBuildWasRun) throws Exception {
+        sessionBuilder = new MavenSessionBuilder(dateBuildWasRun);
+        eventSpy.init(null);
+        eventSpy.onEvent(buildStarting());
+        eventSpy.onEvent(pluginStarted());
+
+        testRepository.assertStartOfBuild(sessionBuilder.toSession(), null);
     }
 
     private void assertBuildInfoStored(boolean buildPassed) {

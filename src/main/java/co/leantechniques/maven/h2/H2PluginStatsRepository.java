@@ -24,7 +24,9 @@ import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 
 import java.io.File;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 
 public class H2PluginStatsRepository implements PluginStatsRepository {
     private H2DatabaseManager h2DatabaseManager;
@@ -38,6 +40,8 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
     public void initialize(EventSpy.Context context) {
         DBI dbi = new DBI(h2DatabaseManager.load());
         handle = dbi.open();
+
+        deletePartialBuilds();
     }
 
     @Override
@@ -118,8 +122,7 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
                     .bind(2, buildId)
                     .execute();
         } else {
-            handle.createStatement("delete from plugin_execution where build_id = ?").bind(0, buildId).execute();
-            handle.createStatement("delete from build where id = ?").bind(0, buildId).execute();
+            deleteBuildDataFor(buildId);
         }
     }
 
@@ -188,6 +191,30 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
                 .bind(2, version)
                 .mapTo(Integer.class)
                 .first() == 0;
+    }
+
+    private void deletePartialBuilds() {
+        List<Long> buildIds = handle.createQuery("select id from build where end_time is null and start_time < ?")
+                .bind(0, today())
+                .mapTo(Long.class)
+                .list();
+        for (Long buildId : buildIds) {
+            deleteBuildDataFor(buildId);
+        }
+    }
+
+    private void deleteBuildDataFor(Long buildId) {
+        handle.createStatement("delete from plugin_execution where build_id = ?").bind(0, buildId).execute();
+        handle.createStatement("delete from build where id = ?").bind(0, buildId).execute();
+    }
+
+    private java.sql.Date today() {
+        Calendar instance = Calendar.getInstance();
+        instance.set(Calendar.HOUR_OF_DAY, 0);
+        instance.set(Calendar.MINUTE, 0);
+        instance.set(Calendar.SECOND, 0);
+        instance.set(Calendar.MILLISECOND, 0);
+        return new java.sql.Date(instance.getTimeInMillis());
     }
 
     private long findBuild(PluginStats pluginStats) {
