@@ -19,16 +19,11 @@ import org.apache.maven.eventspy.MavenSessionBuilder;
 import org.apache.maven.execution.MavenSession;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
-import java.io.File;
 import java.util.Date;
 
-public class H2PluginStatsRepositoryTest {
-    @Rule
-    public TemporaryFolder temporaryFolder = new TemporaryFolder();
+public class H2PluginStatsRepositoryTest extends AbstractDatabaseTest {
     private H2PluginStatsRepository repository;
     private PluginStats pluginStats;
     private MavenSessionBuilder sessionBuilder;
@@ -36,11 +31,9 @@ public class H2PluginStatsRepositoryTest {
 
     @Before
     public void setUp() throws Exception {
-        File directory = temporaryFolder.newFolder("test-db");
+        H2DatabaseManager databaseManager = new H2DatabaseManager();
 
-        H2DatabaseManager databaseManager = new H2DatabaseManager(directory);
-
-        repository = new H2PluginStatsRepository(directory);
+        repository = new H2PluginStatsRepository();
         repository.setH2DatabaseManager(databaseManager);
         repository.initialize(null);
 

@@ -14,22 +14,18 @@
 package org.apache.maven.eventspy;
 
 import co.leantechniques.maven.PluginStats;
+import co.leantechniques.maven.h2.AbstractDatabaseTest;
 import co.leantechniques.maven.h2.H2DatabaseManager;
 import co.leantechniques.maven.h2.H2TestRepository;
 import org.apache.maven.execution.ExecutionEvent;
 import org.apache.maven.execution.MavenSession;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
-import java.io.File;
 import java.util.Calendar;
 import java.util.Date;
 
-public class PluginWatcherEventSpyIntegrationTest {
-    @Rule
-    public TemporaryFolder temporaryFolder = new TemporaryFolder();
+public class PluginWatcherEventSpyIntegrationTest extends AbstractDatabaseTest {
     private PluginWatcherEventSpy eventSpy;
     private Date startTime = new Date();
     private H2TestRepository testRepository;
@@ -37,10 +33,7 @@ public class PluginWatcherEventSpyIntegrationTest {
 
     @Before
     public void setUp() throws Exception {
-        File dbDirectory = temporaryFolder.newFolder("integration");
-
-        System.setProperty(PluginWatcherEventSpy.DB_DIRECTORY_KEY, dbDirectory.getAbsolutePath());
-        H2DatabaseManager databaseManager = new H2DatabaseManager(dbDirectory, true);
+        H2DatabaseManager databaseManager = new H2DatabaseManager();
         testRepository = new H2TestRepository(databaseManager.load());
 
         eventSpy = new PluginWatcherEventSpy();

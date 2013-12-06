@@ -23,7 +23,6 @@ import org.apache.maven.project.MavenProject;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 
-import java.io.File;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -32,8 +31,8 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
     private H2DatabaseManager h2DatabaseManager;
     private Handle handle;
 
-    public H2PluginStatsRepository(File dbLocation) {
-        h2DatabaseManager = new H2DatabaseManager(dbLocation);
+    public H2PluginStatsRepository() {
+        h2DatabaseManager = new H2DatabaseManager();
     }
 
     @Override

@@ -21,12 +21,8 @@ import org.apache.maven.execution.ExecutionEvent;
 import org.codehaus.plexus.component.annotations.Component;
 import org.openide.util.Lookup;
 
-import java.io.File;
-
 @Component(role = EventSpy.class)
 public class PluginWatcherEventSpy extends AbstractEventSpy {
-    private static final File DEFAULT_LOCATION = new File(System.getProperty("user.home"), ".m2-plugin-execution-watcher");
-    public static final String DB_DIRECTORY_KEY = "plugin.execution.watcher.directory";
     public static final String TURN_ON_KEY = "plugin.execution.watcher";
     public static final String BUILD_DATA_KEY = "plugin.execution.watcher.build.data";
 
@@ -39,7 +35,7 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
         if (shouldWatchPlugins()) {
             pluginStatsRepository = lookup.lookup(PluginStatsRepository.class);
             if (pluginStatsRepository == null) {
-                pluginStatsRepository = new H2PluginStatsRepository(determineFolder());
+                pluginStatsRepository = new H2PluginStatsRepository();
             }
             pluginStatsRepository.initialize(context);
         }
@@ -80,13 +76,6 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
                 return true;
         }
         return false;
-    }
-
-    private File determineFolder() {
-        if (System.getProperties().containsKey(DB_DIRECTORY_KEY)) {
-            return new File(System.getProperty(DB_DIRECTORY_KEY));
-        }
-        return DEFAULT_LOCATION;
     }
 
     protected PluginStatsRepository getPluginStatsRepository() {

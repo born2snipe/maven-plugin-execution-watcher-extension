@@ -14,9 +14,7 @@
 package co.leantechniques.maven.h2;
 
 import org.h2.jdbcx.JdbcConnectionPool;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 
@@ -24,17 +22,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class CanMigrateOldDatabaseTest {
-    @Rule
-    public TemporaryFolder temporaryFolder = new TemporaryFolder();
-
+public class CanMigrateOldDatabaseTest extends AbstractDatabaseTest {
     @Test
     public void attemptToMigrateWithFlyway() {
-        File databaseFolder = temporaryFolder.newFolder("test-old-db-migration");
-
         loadOldDatabaseScript(databaseFolder);
-
-        new H2DatabaseManager(databaseFolder).load();
+        new H2DatabaseManager().load();
     }
 
     private void loadOldDatabaseScript(File databaseFolder) {
