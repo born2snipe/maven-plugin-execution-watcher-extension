@@ -123,6 +123,7 @@ public class PluginWatcherEventSpyIntegrationTest extends AbstractDatabaseTest {
         eventSpy.onEvent(pluginStarted());
         eventSpy.onEvent(pluginWasSuccessful());
         eventSpy.onEvent(buildFinished(projectPassed));
+        eventSpy.close();
     }
 
     private ExecutionEvent pluginWasSuccessful() {

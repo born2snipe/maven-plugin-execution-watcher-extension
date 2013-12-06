@@ -54,6 +54,13 @@ public class PluginWatcherEventSpyTest {
     }
 
     @Test
+    public void close_shouldNotifyTheRepositoryTheBuildIsComplete() throws Exception {
+        spy.close();
+
+        verify(statsRepository).finished();
+    }
+
+    @Test
     public void onEvent_shouldIgnoreTypesThatAreNotMojoRelated() throws Exception {
         expectPluginStatsToBeNotSaved(ExecutionEvent.Type.ForkedProjectFailed);
         expectPluginStatsToBeNotSaved(ExecutionEvent.Type.MojoSkipped);

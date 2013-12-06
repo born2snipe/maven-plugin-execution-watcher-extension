@@ -47,6 +47,11 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
         }
     }
 
+    @Override
+    public void close() throws Exception {
+        pluginStatsRepository.finished();
+    }
+
     private boolean isBuildFinished(ExecutionEvent executionEvent) {
         return executionEvent.getType() == ExecutionEvent.Type.SessionEnded;
     }
