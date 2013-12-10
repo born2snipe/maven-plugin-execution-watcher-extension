@@ -22,7 +22,7 @@ import java.io.File;
 
 public class H2DatabaseManager {
     private static final Object LOCK = new Object();
-    private DataSource cachedDataSource;
+    private JdbcConnectionPool cachedDataSource;
     private DatabaseDirectoryProvider directoryProvider;
     private DatabaseMigrator databaseMigrator;
 
@@ -43,6 +43,15 @@ public class H2DatabaseManager {
                 databaseMigrator.migrate(cachedDataSource);
             }
             return cachedDataSource;
+        }
+    }
+
+    public void unload() {
+        synchronized (LOCK) {
+            if (cachedDataSource != null) {
+                cachedDataSource.dispose();
+                cachedDataSource = null;
+            }
         }
     }
 }

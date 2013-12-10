@@ -25,7 +25,6 @@ import java.util.List;
 
 public class H2BuildInformationRepository implements BuildInformationRepository {
     private H2DatabaseManager h2DatabaseManager;
-    private Handle handle;
 
     public H2BuildInformationRepository() {
         h2DatabaseManager = new H2DatabaseManager();
@@ -33,37 +32,40 @@ public class H2BuildInformationRepository implements BuildInformationRepository 
 
     @Override
     public void initialize(EventSpy.Context context) {
-        DBI dbi = new DBI(h2DatabaseManager.load());
-        handle = dbi.open();
-
-        deletePartialBuilds();
+        execute(new Transaction() {
+            public void inTransaction(Handle handle) {
+                deletePartialBuilds(handle);
+            }
+        });
     }
 
     @Override
     public void cleanUp() {
-        if (handle != null) {
-            handle.close();
-        }
+        h2DatabaseManager.unload();
     }
 
     @Override
-    public void save(BuildInformation buildInformation) {
-        insertBuild(buildInformation);
-        insertProjects(buildInformation);
-        insertPluginExecutions(buildInformation);
+    public void save(final BuildInformation buildInformation) {
+        execute(new Transaction() {
+            public void inTransaction(Handle handle) {
+                insertBuild(handle, buildInformation);
+                insertProjects(handle, buildInformation);
+                insertPluginExecutions(handle, buildInformation);
+            }
+        });
     }
 
-    private void insertPluginExecutions(BuildInformation buildInformation) {
+    private void insertPluginExecutions(Handle handle, BuildInformation buildInformation) {
         for (Project project : buildInformation.getProjects()) {
-            long projectId = findOrCreateProject(project);
+            long projectId = findOrCreateProject(handle, project);
             for (PluginExecution pluginExecution : project.getPluginExecutions()) {
-                insertPluginExecutionFor(buildInformation.getId(), projectId, pluginExecution);
+                insertPluginExecutionFor(handle, buildInformation.getId(), projectId, pluginExecution);
             }
         }
     }
 
-    private void insertPluginExecutionFor(long buildId, long projectId, PluginExecution pluginExecution) {
-        long pluginId = findOrCreatePlugin(pluginExecution);
+    private void insertPluginExecutionFor(Handle handle, long buildId, long projectId, PluginExecution pluginExecution) {
+        long pluginId = findOrCreatePlugin(handle, pluginExecution);
         handle.createStatement("insert into plugin_execution (project_id, plugin_id, goal, execution_id, start_time, end_time, build_id) values (?,?,?,?,?,?,?)")
                 .bind(0, projectId)
                 .bind(1, pluginId)
@@ -75,12 +77,12 @@ public class H2BuildInformationRepository implements BuildInformationRepository 
                 .execute();
     }
 
-    private long findOrCreatePlugin(Artifact artifact) {
+    private long findOrCreatePlugin(Handle handle, Artifact artifact) {
         String groupId = artifact.groupId;
         String artifactId = artifact.artifactId;
         String version = artifact.version;
 
-        if (pluginDoesNotExist(groupId, artifactId, version)) {
+        if (pluginDoesNotExist(handle, groupId, artifactId, version)) {
             handle.createStatement("insert into plugin (group_id, artifact_id, version) values (?,?,?)")
                     .bind(0, groupId)
                     .bind(1, artifactId)
@@ -96,14 +98,14 @@ public class H2BuildInformationRepository implements BuildInformationRepository 
                 .first();
     }
 
-    private void insertProjects(BuildInformation buildInformation) {
+    private void insertProjects(Handle handle, BuildInformation buildInformation) {
         for (Project project : buildInformation.getProjects()) {
-            findOrCreateProject(project);
+            findOrCreateProject(handle, project);
         }
     }
 
-    private void insertBuild(BuildInformation buildInformation) {
-        long projectId = findOrCreateProject(buildInformation.getTopLevelProject());
+    private void insertBuild(Handle handle, BuildInformation buildInformation) {
+        long projectId = findOrCreateProject(handle, buildInformation.getTopLevelProject());
 
         handle.createStatement("insert into build (id, start_time, goals, top_level_project_id, data, end_time) values (?,?,?,?,?,?)")
                 .bind(0, buildInformation.getId())
@@ -115,7 +117,7 @@ public class H2BuildInformationRepository implements BuildInformationRepository 
                 .execute();
     }
 
-    private boolean pluginDoesNotExist(String groupId, String artifactId, String version) {
+    private boolean pluginDoesNotExist(Handle handle, String groupId, String artifactId, String version) {
         return handle.createQuery("select count(1) from plugin where group_id = ? and artifact_id = ? and version = ?")
                 .bind(0, groupId)
                 .bind(1, artifactId)
@@ -124,14 +126,14 @@ public class H2BuildInformationRepository implements BuildInformationRepository 
                 .first() == 0;
     }
 
-    private long findOrCreateProject(Artifact project) {
-        if (projectDoesNotExist(project)) {
-            insertProject(project.groupId, project.artifactId, project.version);
+    private long findOrCreateProject(Handle handle, Artifact project) {
+        if (projectDoesNotExist(handle, project)) {
+            insertProject(handle, project.groupId, project.artifactId, project.version);
         }
-        return findProject(project.groupId, project.artifactId, project.version);
+        return findProject(handle, project.groupId, project.artifactId, project.version);
     }
 
-    private long findProject(String groupId, String artifactId, String version) {
+    private long findProject(Handle handle, String groupId, String artifactId, String version) {
         return handle.createQuery("select id from project where group_id = ? and artifact_id = ? and version = ?")
                 .bind(0, groupId)
                 .bind(1, artifactId)
@@ -140,7 +142,7 @@ public class H2BuildInformationRepository implements BuildInformationRepository 
                 .first();
     }
 
-    private void insertProject(String groupId, String artifactId, String version) {
+    private void insertProject(Handle handle, String groupId, String artifactId, String version) {
         handle.createStatement("insert into project (group_id, artifact_id, version) values (?,?,?)")
                 .bind(0, groupId)
                 .bind(1, artifactId)
@@ -148,17 +150,7 @@ public class H2BuildInformationRepository implements BuildInformationRepository 
                 .execute();
     }
 
-    @Deprecated
-    private boolean projectDoesNotExist(String groupId, String artifactId, String version) {
-        return handle.createQuery("select count(1) from project where group_id = ? and artifact_id = ? and version = ?")
-                .bind(0, groupId)
-                .bind(1, artifactId)
-                .bind(2, version)
-                .mapTo(Integer.class)
-                .first() == 0;
-    }
-
-    private boolean projectDoesNotExist(Artifact project) {
+    private boolean projectDoesNotExist(Handle handle, Artifact project) {
         return handle.createQuery("select count(1) from project where group_id = ? and artifact_id = ? and version = ?")
                 .bind(0, project.groupId)
                 .bind(1, project.artifactId)
@@ -167,17 +159,17 @@ public class H2BuildInformationRepository implements BuildInformationRepository 
                 .first() == 0;
     }
 
-    private void deletePartialBuilds() {
+    private void deletePartialBuilds(Handle handle) {
         List<Long> buildIds = handle.createQuery("select id from build where end_time is null and start_time < ?")
                 .bind(0, today())
                 .mapTo(Long.class)
                 .list();
         for (Long buildId : buildIds) {
-            deleteBuildDataFor(buildId);
+            deleteBuildDataFor(handle, buildId);
         }
     }
 
-    private void deleteBuildDataFor(Long buildId) {
+    private void deleteBuildDataFor(Handle handle, Long buildId) {
         handle.createStatement("delete from plugin_execution where build_id = ?").bind(0, buildId).execute();
         handle.createStatement("delete from build where id = ?").bind(0, buildId).execute();
     }
@@ -191,8 +183,18 @@ public class H2BuildInformationRepository implements BuildInformationRepository 
         return new java.sql.Date(instance.getTimeInMillis());
     }
 
+    private void execute(Transaction transaction) {
+        DBI dbi = new DBI(h2DatabaseManager.load());
+        Handle handle = dbi.open();
+        transaction.inTransaction(handle);
+        handle.close();
+    }
+
     public void setH2DatabaseManager(H2DatabaseManager h2DatabaseManager) {
         this.h2DatabaseManager = h2DatabaseManager;
     }
 
+    private interface Transaction {
+        void inTransaction(Handle handle);
+    }
 }
