@@ -48,7 +48,7 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
         if (event instanceof ExecutionEvent) {
             ExecutionEvent executionEvent = (ExecutionEvent) event;
 
-            if (currentBuildInformation == null) {
+            if (shouldInitializeBuildInformation(executionEvent)) {
                 currentBuildInformation = new BuildInformation(
                         executionEvent.getSession(), System.getProperty(BUILD_DATA_KEY)
                 );
@@ -61,6 +61,13 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
                 buildInformationRepository.save(currentBuildInformation);
             }
         }
+    }
+
+    private boolean shouldInitializeBuildInformation(ExecutionEvent executionEvent) {
+        MavenSession session = executionEvent.getSession();
+        return currentBuildInformation == null
+                && session.getProjects() != null
+                && session.getProjects().size() > 0;
     }
 
     private boolean isBuildSuccessful(ExecutionEvent executionEvent) {

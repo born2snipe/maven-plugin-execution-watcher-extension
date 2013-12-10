@@ -97,7 +97,7 @@ public class ExecutionEventBuilder {
     }
 
     private boolean haveProjectsBeenAddedTo(MavenSession session) {
-        return session.getProjects().size() > 0;
+        return session.getProjects() != null && session.getProjects().size() > 0;
     }
 
     public static interface PluginExecutionState {

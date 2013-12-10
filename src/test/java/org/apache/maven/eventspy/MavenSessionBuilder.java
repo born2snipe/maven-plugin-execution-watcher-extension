@@ -31,11 +31,12 @@ public class MavenSessionBuilder {
     public MavenSessionBuilder(Date startTime) {
         session = new MavenSession(null, null, new DefaultMavenExecutionRequest(), new DefaultMavenExecutionResult());
         session.getRequest().setStartTime(startTime);
-        session.setProjects(new ArrayList<MavenProject>());
     }
 
     public MavenSession toSession() {
-        session.setProjects(projectsInBuild);
+        if (projectsInBuild.size() > 0) {
+            session.setProjects(projectsInBuild);
+        }
         return session;
     }
 

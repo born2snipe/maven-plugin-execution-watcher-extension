@@ -26,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.openide.util.Lookup;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import static junit.framework.Assert.*;
@@ -53,6 +54,29 @@ public class PluginWatcherEventSpyTest {
         executionEventBuilder.withProject("1", "1", "1");
 
         when(buildInformationRepositoryProvider.provide()).thenReturn(statsRepository);
+    }
+
+    @Test
+    public void onEvent_shouldNotInitializeTheBuildInformationWhenTheProjectListIsEmpty() throws Exception {
+        executionEventBuilder = new ExecutionEventBuilder();
+        executionEventBuilder.withBuildStarting();
+        ExecutionEvent event = executionEventBuilder.toEvent();
+        event.getSession().setProjects(new ArrayList());
+
+        spy.onEvent(event);
+
+        assertNull(spy.getCurrentBuildInformation());
+    }
+
+    @Test
+    public void onEvent_shouldNotInitializeTheBuildInformationWhenTheProjectListIsNull() throws Exception {
+        executionEventBuilder = new ExecutionEventBuilder();
+        executionEventBuilder.withBuildStarting();
+        ExecutionEvent event = executionEventBuilder.toEvent();
+
+        spy.onEvent(event);
+
+        assertNull(spy.getCurrentBuildInformation());
     }
 
     @Test
