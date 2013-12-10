@@ -14,17 +14,13 @@
 
 package co.leantechniques.maven.h2;
 
-import co.leantechniques.maven.PluginStats;
-import co.leantechniques.maven.PluginStatsRepository;
+import co.leantechniques.maven.*;
 import org.apache.maven.eventspy.EventSpy;
-import org.apache.maven.execution.BuildFailure;
-import org.apache.maven.execution.MavenSession;
-import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.util.StringUtils;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 
 public class H2PluginStatsRepository implements PluginStatsRepository {
@@ -44,91 +40,45 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
     }
 
     @Override
-    public void finished() {
+    public void cleanUp() {
         if (handle != null) {
             handle.close();
         }
     }
 
     @Override
-    public void save(PluginStats pluginStats) {
-        long buildId = findBuild(pluginStats);
-        long projectId = findOrCreateProject(pluginStats);
-        long pluginId = findOrCreatePlugin(pluginStats);
+    public void save(BuildInformation buildInformation) {
+        insertBuild(buildInformation);
+        insertProjects(buildInformation);
+        insertPluginExecutions(buildInformation);
+    }
 
-        if (pluginStats.type == PluginStats.Type.START) {
-            handle.createStatement("insert into plugin_execution (project_id, plugin_id, goal, execution_id, execution_hashcode, start_time, result, build_id) values (?,?,?,?,?,?,?,?)")
-                    .bind(0, projectId)
-                    .bind(1, pluginId)
-                    .bind(2, pluginStats.plugin.goal)
-                    .bind(3, pluginStats.executionId)
-                    .bind(4, pluginStats.executionHashCode)
-                    .bind(5, pluginStats.timestamp)
-                    .bind(6, pluginStats.type.name())
-                    .bind(7, buildId)
-                    .execute();
-        } else {
-            handle.createStatement("update plugin_execution set end_time=?,result=? where execution_hashcode=? and build_id=?")
-                    .bind(0, pluginStats.timestamp)
-                    .bind(1, pluginStats.type.name())
-                    .bind(2, pluginStats.executionHashCode)
-                    .bind(3, buildId)
-                    .execute();
-
+    private void insertPluginExecutions(BuildInformation buildInformation) {
+        for (Project project : buildInformation.getProjects()) {
+            long projectId = findOrCreateProject(project);
+            for (PluginExecution pluginExecution : project.getPluginExecutions()) {
+                insertPluginExecutionFor(buildInformation.getId(), projectId, pluginExecution);
+            }
         }
     }
 
-    @Override
-    public void saveBuildStarted(MavenSession session, String additionalBuildData) {
-        for (MavenProject project : session.getProjects()) {
-            if (projectDoesNotExist(project.getGroupId(), project.getArtifactId(), project.getVersion())) {
-                insertProject(project.getGroupId(), project.getArtifactId(), project.getVersion());
-            }
-        }
-
-        String goals = "";
-        for (String goal : session.getRequest().getGoals()) {
-            goals += goal + " ";
-        }
-        Date startTime = session.getRequest().getStartTime();
-        MavenProject topLevelProject = session.getTopLevelProject();
-        long projectId = findProject(topLevelProject.getGroupId(), topLevelProject.getArtifactId(), topLevelProject.getVersion());
-
-        handle.createStatement("insert into build (id, start_time, goals, top_level_project_id, data) values (?,?,?,?,?)")
-                .bind(0, startTime.getTime())
-                .bind(1, startTime)
-                .bind(2, goals.trim())
-                .bind(3, projectId)
-                .bind(4, additionalBuildData)
+    private void insertPluginExecutionFor(long buildId, long projectId, PluginExecution pluginExecution) {
+        long pluginId = findOrCreatePlugin(pluginExecution);
+        handle.createStatement("insert into plugin_execution (project_id, plugin_id, goal, execution_id, start_time, end_time, build_id, result) values (?,?,?,?,?,?,?,'SUCCEED')")
+                .bind(0, projectId)
+                .bind(1, pluginId)
+                .bind(2, pluginExecution.goal)
+                .bind(3, pluginExecution.executionId)
+                .bind(4, pluginExecution.startTime)
+                .bind(5, pluginExecution.endTime)
+                .bind(6, buildId)
                 .execute();
     }
 
-    @Override
-    public void saveBuildFinished(MavenSession session) {
-        boolean passing = true;
-        for (MavenProject project : session.getProjects()) {
-            if (session.getResult().getBuildSummary(project) instanceof BuildFailure) {
-                passing = false;
-                break;
-            }
-        }
-
-        long buildId = session.getRequest().getStartTime().getTime();
-        if (passing) {
-            handle.createStatement("update build set end_time = ?, passed = ? where id = ?")
-                    .bind(0, new Date())
-                    .bind(1, passing ? 1 : 0)
-                    .bind(2, buildId)
-                    .execute();
-        } else {
-            deleteBuildDataFor(buildId);
-        }
-    }
-
-    private long findOrCreatePlugin(PluginStats pluginStats) {
-        String groupId = pluginStats.plugin.groupId;
-        String artifactId = pluginStats.plugin.artifactId;
-        String version = pluginStats.plugin.version;
+    private long findOrCreatePlugin(Artifact artifact) {
+        String groupId = artifact.groupId;
+        String artifactId = artifact.artifactId;
+        String version = artifact.version;
 
         if (pluginDoesNotExist(groupId, artifactId, version)) {
             handle.createStatement("insert into plugin (group_id, artifact_id, version) values (?,?,?)")
@@ -146,6 +96,26 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
                 .first();
     }
 
+    private void insertProjects(BuildInformation buildInformation) {
+        for (Project project : buildInformation.getProjects()) {
+            findOrCreateProject(project);
+        }
+    }
+
+    private void insertBuild(BuildInformation buildInformation) {
+        long projectId = findOrCreateProject(buildInformation.getTopLevelProject());
+
+        // todo - do not need to store passed, we only save passing builds now
+        handle.createStatement("insert into build (id, start_time, goals, top_level_project_id, data, end_time, passed) values (?,?,?,?,?,?,1)")
+                .bind(0, buildInformation.getId())
+                .bind(1, buildInformation.getStartTime())
+                .bind(2, StringUtils.join(buildInformation.getGoals().iterator(), " "))
+                .bind(3, projectId)
+                .bind(4, buildInformation.getUserSpecifiedBuildData())
+                .bind(5, buildInformation.getEndTime())
+                .execute();
+    }
+
     private boolean pluginDoesNotExist(String groupId, String artifactId, String version) {
         return handle.createQuery("select count(1) from plugin where group_id = ? and artifact_id = ? and version = ?")
                 .bind(0, groupId)
@@ -155,15 +125,11 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
                 .first() == 0;
     }
 
-    private long findOrCreateProject(PluginStats pluginStats) {
-        String groupId = pluginStats.project.groupId;
-        String artifactId = pluginStats.project.artifactId;
-        String version = pluginStats.project.version;
-
-        if (projectDoesNotExist(groupId, artifactId, version)) {
-            insertProject(groupId, artifactId, version);
+    private long findOrCreateProject(Artifact project) {
+        if (projectDoesNotExist(project)) {
+            insertProject(project.groupId, project.artifactId, project.version);
         }
-        return findProject(groupId, artifactId, version);
+        return findProject(project.groupId, project.artifactId, project.version);
     }
 
     private long findProject(String groupId, String artifactId, String version) {
@@ -183,11 +149,21 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
                 .execute();
     }
 
+    @Deprecated
     private boolean projectDoesNotExist(String groupId, String artifactId, String version) {
         return handle.createQuery("select count(1) from project where group_id = ? and artifact_id = ? and version = ?")
                 .bind(0, groupId)
                 .bind(1, artifactId)
                 .bind(2, version)
+                .mapTo(Integer.class)
+                .first() == 0;
+    }
+
+    private boolean projectDoesNotExist(Artifact project) {
+        return handle.createQuery("select count(1) from project where group_id = ? and artifact_id = ? and version = ?")
+                .bind(0, project.groupId)
+                .bind(1, project.artifactId)
+                .bind(2, project.version)
                 .mapTo(Integer.class)
                 .first() == 0;
     }
@@ -214,10 +190,6 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
         instance.set(Calendar.SECOND, 0);
         instance.set(Calendar.MILLISECOND, 0);
         return new java.sql.Date(instance.getTimeInMillis());
-    }
-
-    private long findBuild(PluginStats pluginStats) {
-        return pluginStats.session.getRequest().getStartTime().getTime();
     }
 
     public void setH2DatabaseManager(H2DatabaseManager h2DatabaseManager) {

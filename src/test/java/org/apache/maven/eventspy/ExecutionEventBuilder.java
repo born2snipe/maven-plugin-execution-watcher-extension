@@ -73,11 +73,15 @@ public class ExecutionEventBuilder {
     }
 
     public PluginExecutionState withPlugin(String groupId, String artifactId, String version, String goal) {
+        return withPlugin(groupId, artifactId, version, goal, groupId + ":" + artifactId + ":" + version + ":" + goal);
+    }
+
+    public PluginExecutionState withPlugin(String groupId, String artifactId, String version, String goal, String executionId) {
         mojoExecution.setGroupId(groupId);
         mojoExecution.setArtifactId(artifactId);
         mojoExecution.setVersion(version);
         mojoExecution.setGoal(goal);
-        mojoExecution.setExecutionId(groupId + ":" + artifactId + ":" + version + ":" + goal);
+        mojoExecution.setExecutionId(executionId);
 
         return new PluginExecutionState() {
             @Override

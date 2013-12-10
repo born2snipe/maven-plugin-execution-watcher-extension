@@ -82,7 +82,7 @@ public class H2TestRepository {
                 .bind(2, version)
                 .mapTo(Integer.class)
                 .first();
-        assertEquals("we should have saved the project", 1, count);
+        assertEquals("we should have saved the project (" + groupId + ":" + artifactId + ":" + version + ")", 1, count);
     }
 
 

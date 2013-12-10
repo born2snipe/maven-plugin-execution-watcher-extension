@@ -14,19 +14,24 @@
 
 package org.apache.maven.eventspy;
 
-import co.leantechniques.maven.PluginStatsFactory;
+import co.leantechniques.maven.BuildInformation;
 import co.leantechniques.maven.PluginStatsRepository;
 import co.leantechniques.maven.PluginStatsRepositoryProvider;
+import org.apache.maven.execution.BuildFailure;
 import org.apache.maven.execution.ExecutionEvent;
+import org.apache.maven.execution.MavenSession;
+import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.annotations.Component;
+
+import java.util.Date;
 
 @Component(role = EventSpy.class)
 public class PluginWatcherEventSpy extends AbstractEventSpy {
     public static final String BUILD_DATA_KEY = "plugin.execution.watcher.build.data";
 
-    private PluginStatsFactory pluginStatsFactory = new PluginStatsFactory();
     private PluginStatsRepositoryProvider pluginStatsRepositoryProvider = new PluginStatsRepositoryProvider();
     private PluginStatsRepository pluginStatsRepository;
+    private BuildInformation currentBuildInformation;
 
     @Override
     public void init(Context context) throws Exception {
@@ -39,29 +44,44 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
 
     @Override
     public void onEvent(Object event) throws Exception {
+
         if (event instanceof ExecutionEvent) {
             ExecutionEvent executionEvent = (ExecutionEvent) event;
+
+            if (currentBuildInformation == null) {
+                currentBuildInformation = new BuildInformation(
+                        executionEvent.getSession(), System.getProperty(BUILD_DATA_KEY)
+                );
+            }
+
             if (isPluginRelated(executionEvent)) {
-                pluginStatsRepository.save(pluginStatsFactory.build(executionEvent));
-            } else if (isBuildStarting(executionEvent)) {
-                pluginStatsRepository.saveBuildStarted(executionEvent.getSession(), System.getProperty(BUILD_DATA_KEY));
-            } else if (isBuildFinished(executionEvent)) {
-                pluginStatsRepository.saveBuildFinished(executionEvent.getSession());
+                currentBuildInformation.addMavenEvent(executionEvent);
+            } else if (isBuildFinished(executionEvent) && isBuildSuccessful(executionEvent)) {
+                currentBuildInformation.setEndTime(new Date());
+                pluginStatsRepository.save(currentBuildInformation);
             }
         }
     }
 
+    private boolean isBuildSuccessful(ExecutionEvent executionEvent) {
+        boolean passing = true;
+        MavenSession session = executionEvent.getSession();
+        for (MavenProject project : session.getProjects()) {
+            if (session.getResult().getBuildSummary(project) instanceof BuildFailure) {
+                passing = false;
+                break;
+            }
+        }
+        return passing;
+    }
+
     @Override
     public void close() throws Exception {
-        pluginStatsRepository.finished();
+        pluginStatsRepository.cleanUp();
     }
 
     private boolean isBuildFinished(ExecutionEvent executionEvent) {
         return executionEvent.getType() == ExecutionEvent.Type.SessionEnded;
-    }
-
-    private boolean isBuildStarting(ExecutionEvent executionEvent) {
-        return executionEvent.getType() == ExecutionEvent.Type.SessionStarted;
     }
 
     private boolean isPluginRelated(ExecutionEvent event) {
@@ -73,5 +93,9 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
                 return true;
         }
         return false;
+    }
+
+    protected BuildInformation getCurrentBuildInformation() {
+        return currentBuildInformation;
     }
 }

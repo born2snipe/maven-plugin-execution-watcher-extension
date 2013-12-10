@@ -14,8 +14,11 @@
 
 package co.leantechniques.maven.h2;
 
+import co.leantechniques.maven.BuildInformation;
 import co.leantechniques.maven.PluginStats;
+import org.apache.maven.eventspy.ExecutionEventBuilder;
 import org.apache.maven.eventspy.MavenSessionBuilder;
+import org.apache.maven.execution.ExecutionEvent;
 import org.apache.maven.execution.MavenSession;
 import org.junit.After;
 import org.junit.Before;
@@ -25,7 +28,6 @@ import java.util.Date;
 
 public class H2PluginStatsRepositoryTest extends AbstractDatabaseTest {
     private H2PluginStatsRepository repository;
-    private PluginStats pluginStats;
     private MavenSessionBuilder sessionBuilder;
     private H2TestRepository testRepository;
 
@@ -41,152 +43,74 @@ public class H2PluginStatsRepositoryTest extends AbstractDatabaseTest {
 
         sessionBuilder = new MavenSessionBuilder();
         sessionBuilder.withGoals("clean", "verify");
-
-        pluginStats = new PluginStats();
-        pluginStats.project = project("groupId", "artifactId", "1.0");
-        pluginStats.plugin = plugin("groupId", "artifactId", "1.0", "clean");
-        pluginStats.timestamp = new Date();
-        pluginStats.executionId = "execution-1";
-        pluginStats.executionHashCode = 123;
-        pluginStats.type = PluginStats.Type.START;
-        pluginStats.session = sessionBuilder.toSession();
     }
 
     @After
     public void tearDown() throws Exception {
-        repository.finished();
+        repository.cleanUp();
     }
 
     @Test
-    public void saveBuildFinished_failingBuild() {
-        sessionBuilder.withProject("1", "1", "1").withSuccess();
-        sessionBuilder.withProject("2", "2", "2").withFailure();
-        MavenSession session = sessionBuilder.toSession();
+    public void save_shouldSaveAllThePluginExecutionsForEachProject() {
+        ExecutionEventBuilder builder = new ExecutionEventBuilder(sessionBuilder);
+        builder.withProject("1", "1", "1");
+        builder.withPlugin("plugin-1", "plugin-1", "plugin-1", "goal-1").starting();
 
-        repository.saveBuildStarted(session, "build-data");
-        repository.saveBuildFinished(session);
+        ExecutionEvent event = builder.toEvent();
+        MavenSession session = event.getSession();
 
-        testRepository.assertNoBuildIsStored();
-        testRepository.assertNoPluginExecutionsAreStored();
+        BuildInformation buildInformation = new BuildInformation(session, null);
+        buildInformation.addMavenEvent(event);
+
+        repository.save(buildInformation);
+
+        testRepository.assertExecution(session, "plugin-1:plugin-1:plugin-1:goal-1", "goal-1", PluginStats.Type.SUCCEED);
     }
 
     @Test
-    public void saveBuildFinished_passingBuild() {
-        sessionBuilder.withProject("1", "1", "1").withSuccess();
-        sessionBuilder.withProject("2", "2", "2").withSuccess();
-        MavenSession session = sessionBuilder.toSession();
+    public void save_shouldSaveAllTheProjectsInTheBuild() {
+        ExecutionEventBuilder builder = new ExecutionEventBuilder(sessionBuilder);
+        builder.withProject("1", "1", "1");
+        builder.withProject("2", "2", "2");
 
-        repository.saveBuildStarted(session, "build-data");
-        repository.saveBuildFinished(session);
+        ExecutionEvent event = builder.toEvent();
+        MavenSession session = event.getSession();
 
-        testRepository.assertEndOfBuild(session, true);
-    }
-
-    @Test
-    public void saveBuildStarted_shouldInsertTheProjectIfTheVersionIsDifferent() {
-        testRepository.insertProject("1", "1", "0");
-
-        sessionBuilder.withProject("1", "1", "1");
-
-        repository.saveBuildStarted(sessionBuilder.toSession(), "build-data");
-
-        testRepository.assertProject("1", "1", "1");
-    }
-
-    @Test
-    public void saveBuildStarted_shouldNotInsertDuplicateProjects() {
-        testRepository.insertProject("1", "1", "1");
-
-        sessionBuilder.withProject("1", "1", "1");
-
-        repository.saveBuildStarted(sessionBuilder.toSession(), "build-data");
-
-        testRepository.assertProject("1", "1", "1");
-    }
-
-
-    @Test
-    public void saveBuildStarted() {
-        sessionBuilder.withProject("1", "1", "1");
-        sessionBuilder.withProject("2", "2", "2");
-        MavenSession session = sessionBuilder.toSession();
-
-        repository.saveBuildStarted(session, "build-data");
+        repository.save(new BuildInformation(session, null));
 
         testRepository.assertProject("1", "1", "1");
         testRepository.assertProject("2", "2", "2");
-        testRepository.assertStartOfBuild(session, "build-data");
     }
 
     @Test
-    public void save_shouldUpdateTheExistingRecordWhenTheTypeIs_SUCCEED() {
-        insertBuild();
+    public void save_shouldNotInsertTheProjectMultipleTimes() {
+        ExecutionEventBuilder builder = new ExecutionEventBuilder(sessionBuilder);
+        builder.withProject("1", "1", "1");
+        builder.withProject("1", "1", "1");
 
-        repository.save(pluginStats);
+        ExecutionEvent event = builder.toEvent();
+        MavenSession session = event.getSession();
 
-        pluginStats.type = PluginStats.Type.SUCCEED;
-        repository.save(pluginStats);
+        repository.save(new BuildInformation(session, null));
 
-        assertExecution("execution-1", "clean", PluginStats.Type.SUCCEED);
+        testRepository.assertProject("1", "1", "1");
     }
 
     @Test
-    public void save_shouldUpdateTheExistingRecordWhenTheTypeIs_FAILED() {
-        insertBuild();
+    public void save_shouldSaveAllTheBuildInformation() {
+        ExecutionEventBuilder builder = new ExecutionEventBuilder(sessionBuilder);
+        builder.withProject("1", "1", "1");
 
-        repository.save(pluginStats);
+        ExecutionEvent event = builder.toEvent();
+        MavenSession session = event.getSession();
 
-        pluginStats.type = PluginStats.Type.FAILED;
-        repository.save(pluginStats);
+        BuildInformation info = new BuildInformation(session, null);
+        info.setEndTime(new Date());
 
-        assertExecution("execution-1", "clean", PluginStats.Type.FAILED);
-    }
+        repository.save(info);
 
-    @Test
-    public void save_shouldInsertOnlyOneProjectWhenCalledMultipleTimes() {
-        insertBuild();
-
-        repository.save(pluginStats);
-        repository.save(pluginStats);
-
-        testRepository.assertProject("groupId", "artifactId", "1.0");
-        testRepository.assertPlugin("groupId", "artifactId", "1.0");
-    }
-
-    @Test
-    public void save_start() {
-        insertBuild();
-
-        repository.save(pluginStats);
-
-        testRepository.assertProject("groupId", "artifactId", "1.0");
-        testRepository.assertPlugin("groupId", "artifactId", "1.0");
-        assertExecution("execution-1", "clean", PluginStats.Type.START);
-    }
-
-    private void insertBuild() {
-        testRepository.insertBuild(sessionBuilder.toSession());
-    }
-
-    private void assertExecution(String executionId, String goal, PluginStats.Type type) {
-        testRepository.assertExecution(sessionBuilder.toSession(), executionId, goal, type);
-    }
-
-    private PluginStats.Project project(String groupId, String artifactId, String version) {
-        PluginStats.Project project = new PluginStats.Project();
-        project.groupId = groupId;
-        project.artifactId = artifactId;
-        project.version = version;
-        return project;
-    }
-
-    private PluginStats.Plugin plugin(String groupId, String artifactId, String version, String goal) {
-        PluginStats.Plugin plugin = new PluginStats.Plugin();
-        plugin.groupId = groupId;
-        plugin.artifactId = artifactId;
-        plugin.version = version;
-        plugin.goal = goal;
-        return plugin;
+        testRepository.assertEndOfBuild(session, true);
+        testRepository.assertProject("1", "1", "1");
     }
 
 }

@@ -14,8 +14,7 @@
 
 package org.apache.maven.eventspy;
 
-import co.leantechniques.maven.PluginStats;
-import co.leantechniques.maven.PluginStatsFactory;
+import co.leantechniques.maven.BuildInformation;
 import co.leantechniques.maven.PluginStatsRepository;
 import co.leantechniques.maven.PluginStatsRepositoryProvider;
 import org.apache.maven.execution.ExecutionEvent;
@@ -27,14 +26,15 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.openide.util.Lookup;
 
+import java.util.Arrays;
+
+import static junit.framework.Assert.*;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class PluginWatcherEventSpyTest {
     @Mock
     private PluginStatsRepositoryProvider pluginStatsRepositoryProvider;
-    @Mock
-    PluginStatsFactory pluginStatsFactory;
     @Mock
     EventSpy.Context context;
     @Mock
@@ -50,15 +50,82 @@ public class PluginWatcherEventSpyTest {
         System.getProperties().remove("plugin.execution.watcher.build.data");
 
         executionEventBuilder = new ExecutionEventBuilder();
+        executionEventBuilder.withProject("1", "1", "1");
 
         when(pluginStatsRepositoryProvider.provide()).thenReturn(statsRepository);
+    }
+
+    @Test
+    public void onEvent_shouldStoreTheBuildDataAsPartOfTheBuildInformation() throws Exception {
+        System.setProperty(PluginWatcherEventSpy.BUILD_DATA_KEY, "build-data");
+
+        executionEventBuilder.withBuildStarting();
+        spy.onEvent(executionEventBuilder.toEvent());
+
+        assertEquals("build-data", spy.getCurrentBuildInformation().getUserSpecifiedBuildData());
+    }
+
+    @Test
+    public void onEvent_shouldNotStoreTheBuildInformationWhenTheBuildFails() throws Exception {
+        executionEventBuilder = new ExecutionEventBuilder();
+        executionEventBuilder.withProject("1", "1", "1").withFailure();
+
+        executionEventBuilder.withBuildStarting();
+        spy.onEvent(executionEventBuilder.toEvent());
+
+        executionEventBuilder.withBuildFinished();
+        spy.onEvent(executionEventBuilder.toEvent());
+
+        verify(statsRepository, never()).save(spy.getCurrentBuildInformation());
+    }
+
+    @Test
+    public void onEvent_shouldSetTheEndTimeForTheBuild() throws Exception {
+        executionEventBuilder.withBuildStarting();
+        spy.onEvent(executionEventBuilder.toEvent());
+
+        executionEventBuilder.withBuildFinished();
+        spy.onEvent(executionEventBuilder.toEvent());
+
+        assertNotNull(spy.getCurrentBuildInformation().getEndTime());
+    }
+
+    @Test
+    public void onEvent_shouldStoreTheBuildInformationWhenTheSessionFinishes() throws Exception {
+        executionEventBuilder.withBuildStarting();
+        spy.onEvent(executionEventBuilder.toEvent());
+
+        executionEventBuilder.withBuildFinished();
+        spy.onEvent(executionEventBuilder.toEvent());
+
+        verify(statsRepository).save(spy.getCurrentBuildInformation());
+    }
+
+    @Test
+    public void onEvent_shouldNotReinitializeTheBuildInfoOnEveryEventBeingProcessed() throws Exception {
+        executionEventBuilder.withBuildStarting();
+        spy.onEvent(executionEventBuilder.toEvent());
+        BuildInformation info = spy.getCurrentBuildInformation();
+
+        executionEventBuilder.withBuildFinished();
+        spy.onEvent(executionEventBuilder.toEvent());
+        assertSame(info, spy.getCurrentBuildInformation());
+    }
+
+    @Test
+    public void onEvent_shouldStoreTheStartOfTheBuildInformationInMemory() throws Exception {
+        executionEventBuilder.withBuildStarting();
+
+        spy.onEvent(executionEventBuilder.toEvent());
+
+        assertNotNull(spy.getCurrentBuildInformation());
     }
 
     @Test
     public void close_shouldNotifyTheRepositoryTheBuildIsComplete() throws Exception {
         spy.close();
 
-        verify(statsRepository).finished();
+        verify(statsRepository).cleanUp();
     }
 
     @Test
@@ -68,42 +135,18 @@ public class PluginWatcherEventSpyTest {
     }
 
     @Test
-    public void onEvent_shouldStoreWhenTheExecutionEventTypeIsMojoRelated() throws Exception {
+    public void onEvent_shouldStoreWhenTheExecutionEventTypeIsMojoSucceeded() throws Exception {
         expectPluginStatsToBeSaved(ExecutionEvent.Type.MojoSucceeded);
+    }
+
+    @Test
+    public void onEvent_shouldStoreWhenTheExecutionEventTypeIsMojoStarted() throws Exception {
         expectPluginStatsToBeSaved(ExecutionEvent.Type.MojoStarted);
+    }
+
+    @Test
+    public void onEvent_shouldStoreWhenTheExecutionEventTypeIsMojoFailed() throws Exception {
         expectPluginStatsToBeSaved(ExecutionEvent.Type.MojoFailed);
-    }
-
-    @Test
-    public void onEvent_shouldStoreWhenASessionStarts_withAdditionalBuildData() throws Exception {
-        System.setProperty("plugin.execution.watcher.build.data", "build-data");
-
-        executionEventBuilder.expectEventType(ExecutionEvent.Type.SessionStarted);
-        ExecutionEvent event = executionEventBuilder.toEvent();
-
-        spy.onEvent(event);
-
-        verify(statsRepository).saveBuildStarted(event.getSession(), "build-data");
-    }
-
-    @Test
-    public void onEvent_shouldStoreWhenASessionStarts() throws Exception {
-        executionEventBuilder.expectEventType(ExecutionEvent.Type.SessionStarted);
-        ExecutionEvent event = executionEventBuilder.toEvent();
-
-        spy.onEvent(event);
-
-        verify(statsRepository).saveBuildStarted(event.getSession(), null);
-    }
-
-    @Test
-    public void onEvent_shouldStoreWhenASessionEnds() throws Exception {
-        executionEventBuilder.expectEventType(ExecutionEvent.Type.SessionEnded);
-        ExecutionEvent event = executionEventBuilder.toEvent();
-
-        spy.onEvent(event);
-
-        verify(statsRepository).saveBuildFinished(event.getSession());
     }
 
     @Test
@@ -121,16 +164,13 @@ public class PluginWatcherEventSpyTest {
     }
 
     private void expectPluginStatsToBeSaved(ExecutionEvent.Type expectedType) throws Exception {
-        PluginStats stats = new PluginStats();
-
         executionEventBuilder.expectEventType(expectedType);
         ExecutionEvent event = executionEventBuilder.toEvent();
 
-        when(pluginStatsFactory.build(event)).thenReturn(stats);
-
         spy.onEvent(event);
 
-        verify(statsRepository).save(stats);
+        BuildInformation buildInformation = spy.getCurrentBuildInformation();
+        assertEquals(Arrays.asList(event), buildInformation.getMavenEvents());
     }
 
     private void expectPluginStatsToBeNotSaved(ExecutionEvent.Type expectedType) throws Exception {
@@ -138,6 +178,6 @@ public class PluginWatcherEventSpyTest {
 
         spy.onEvent(executionEventBuilder.toEvent());
 
-        verifyZeroInteractions(statsRepository, pluginStatsFactory);
+        assertEquals(0, spy.getCurrentBuildInformation().getMavenEvents().size());
     }
 }

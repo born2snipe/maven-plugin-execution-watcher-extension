@@ -15,16 +15,12 @@
 package co.leantechniques.maven;
 
 import org.apache.maven.eventspy.EventSpy;
-import org.apache.maven.execution.MavenSession;
 
 public interface PluginStatsRepository {
     void initialize(EventSpy.Context context);
 
-    void finished();
+    void save(BuildInformation buildInformation);
 
-    void save(PluginStats pluginStats);
+    void cleanUp();
 
-    void saveBuildStarted(MavenSession session, String additionalBuildData);
-
-    void saveBuildFinished(MavenSession session);
 }
