@@ -15,7 +15,6 @@
 package co.leantechniques.maven.h2;
 
 import co.leantechniques.maven.BuildInformation;
-import co.leantechniques.maven.PluginStats;
 import org.apache.maven.eventspy.ExecutionEventBuilder;
 import org.apache.maven.eventspy.MavenSessionBuilder;
 import org.apache.maven.execution.ExecutionEvent;
@@ -64,7 +63,7 @@ public class H2PluginStatsRepositoryTest extends AbstractDatabaseTest {
 
         repository.save(buildInformation);
 
-        testRepository.assertExecution(session, "plugin-1:plugin-1:plugin-1:goal-1", "goal-1", PluginStats.Type.SUCCEED);
+        testRepository.assertExecution(session, "plugin-1:plugin-1:plugin-1:goal-1", "goal-1");
     }
 
     @Test

@@ -13,7 +13,6 @@
  */
 package org.apache.maven.eventspy;
 
-import co.leantechniques.maven.PluginStats;
 import co.leantechniques.maven.h2.AbstractDatabaseTest;
 import co.leantechniques.maven.h2.H2DatabaseManager;
 import co.leantechniques.maven.h2.H2TestRepository;
@@ -50,7 +49,7 @@ public class PluginWatcherEventSpyIntegrationTest extends AbstractDatabaseTest {
     private void assertBuildInfoStored(boolean buildPassed) {
         MavenSession session = sessionBuilder.toSession();
         testRepository.assertPlugin("2", "2", "2");
-        testRepository.assertExecution(session, "2:2:2:2", "2", PluginStats.Type.SUCCEED);
+        testRepository.assertExecution(session, "2:2:2:2", "2");
         testRepository.assertEndOfBuild(session, buildPassed);
     }
 

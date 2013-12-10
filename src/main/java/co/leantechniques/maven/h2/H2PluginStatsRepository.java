@@ -64,7 +64,7 @@ public class H2PluginStatsRepository implements PluginStatsRepository {
 
     private void insertPluginExecutionFor(long buildId, long projectId, PluginExecution pluginExecution) {
         long pluginId = findOrCreatePlugin(pluginExecution);
-        handle.createStatement("insert into plugin_execution (project_id, plugin_id, goal, execution_id, start_time, end_time, build_id, result) values (?,?,?,?,?,?,?,'SUCCEED')")
+        handle.createStatement("insert into plugin_execution (project_id, plugin_id, goal, execution_id, start_time, end_time, build_id) values (?,?,?,?,?,?,?)")
                 .bind(0, projectId)
                 .bind(1, pluginId)
                 .bind(2, pluginExecution.goal)
