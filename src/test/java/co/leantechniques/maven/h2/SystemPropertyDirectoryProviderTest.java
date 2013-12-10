@@ -20,19 +20,19 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 
-import static co.leantechniques.maven.h2.H2DatabaseDirectoryProvider.DB_DIRECTORY_KEY;
-import static co.leantechniques.maven.h2.H2DatabaseDirectoryProvider.DEFAULT_LOCATION;
+import static co.leantechniques.maven.h2.SystemPropertyDirectoryProvider.DB_DIRECTORY_KEY;
+import static co.leantechniques.maven.h2.SystemPropertyDirectoryProvider.DEFAULT_LOCATION;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertSame;
 
-public class H2DatabaseDirectoryProviderTest {
+public class SystemPropertyDirectoryProviderTest {
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
-    private H2DatabaseDirectoryProvider directoryProvider;
+    private SystemPropertyDirectoryProvider directoryProvider;
 
     @Before
     public void setUp() throws Exception {
-        directoryProvider = new H2DatabaseDirectoryProvider();
+        directoryProvider = new SystemPropertyDirectoryProvider();
         System.getProperties().remove(DB_DIRECTORY_KEY);
     }
 

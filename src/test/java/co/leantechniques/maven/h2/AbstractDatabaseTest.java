@@ -30,11 +30,11 @@ public abstract class AbstractDatabaseTest {
     public void initializeDatabase() throws Exception {
         FlywayDatabaseMigrator.showFlyWayLogging = true;
         databaseFolder = temporaryFolder.newFolder("test.db.directory");
-        System.setProperty(H2DatabaseDirectoryProvider.DB_DIRECTORY_KEY, databaseFolder.getAbsolutePath());
+        System.setProperty(SystemPropertyDirectoryProvider.DB_DIRECTORY_KEY, databaseFolder.getAbsolutePath());
     }
 
     @After
     public void removeTheDatabaseDirectoryKey() throws Exception {
-        System.getProperties().remove(H2DatabaseDirectoryProvider.DB_DIRECTORY_KEY);
+        System.getProperties().remove(SystemPropertyDirectoryProvider.DB_DIRECTORY_KEY);
     }
 }

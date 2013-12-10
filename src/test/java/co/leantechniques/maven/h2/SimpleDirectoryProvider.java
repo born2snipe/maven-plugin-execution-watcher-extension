@@ -15,17 +15,15 @@ package co.leantechniques.maven.h2;
 
 import java.io.File;
 
-public class H2DatabaseDirectoryProvider implements DatabaseDirectoryProvider {
-    public static final File DEFAULT_LOCATION = new File(System.getProperty("user.home"), ".m2-plugin-execution-watcher");
-    public static final String DB_DIRECTORY_KEY = "plugin.execution.watcher.directory";
+public class SimpleDirectoryProvider implements DatabaseDirectoryProvider {
+    private File directory;
+
+    public SimpleDirectoryProvider(File directory) {
+        this.directory = directory;
+    }
 
     @Override
     public File provide() {
-        File directory = DEFAULT_LOCATION;
-        if (System.getProperty(DB_DIRECTORY_KEY) != null) {
-            directory = new File(System.getProperty(DB_DIRECTORY_KEY));
-        }
-        directory.mkdirs();
         return directory;
     }
 }

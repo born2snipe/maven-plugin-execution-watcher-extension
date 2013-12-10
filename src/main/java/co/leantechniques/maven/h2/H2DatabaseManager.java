@@ -23,8 +23,17 @@ import java.io.File;
 public class H2DatabaseManager {
     private static final Object LOCK = new Object();
     private DataSource cachedDataSource;
-    private DatabaseDirectoryProvider directoryProvider = new H2DatabaseDirectoryProvider();
-    private DatabaseMigrator databaseMigrator = new FlywayDatabaseMigrator();
+    private DatabaseDirectoryProvider directoryProvider;
+    private DatabaseMigrator databaseMigrator;
+
+    public H2DatabaseManager() {
+        this(new SystemPropertyDirectoryProvider(), new FlywayDatabaseMigrator());
+    }
+
+    public H2DatabaseManager(DatabaseDirectoryProvider directoryProvider, DatabaseMigrator databaseMigrator) {
+        this.directoryProvider = directoryProvider;
+        this.databaseMigrator = databaseMigrator;
+    }
 
     public DataSource load() {
         synchronized (LOCK) {
