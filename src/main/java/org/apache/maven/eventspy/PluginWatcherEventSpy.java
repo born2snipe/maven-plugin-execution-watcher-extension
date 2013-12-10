@@ -15,8 +15,8 @@
 package org.apache.maven.eventspy;
 
 import co.leantechniques.maven.BuildInformation;
-import co.leantechniques.maven.PluginStatsRepository;
-import co.leantechniques.maven.PluginStatsRepositoryProvider;
+import co.leantechniques.maven.BuildInformationRepository;
+import co.leantechniques.maven.BuildInformationRepositoryProvider;
 import org.apache.maven.execution.BuildFailure;
 import org.apache.maven.execution.ExecutionEvent;
 import org.apache.maven.execution.MavenSession;
@@ -29,8 +29,8 @@ import java.util.Date;
 public class PluginWatcherEventSpy extends AbstractEventSpy {
     public static final String BUILD_DATA_KEY = "plugin.execution.watcher.build.data";
 
-    private PluginStatsRepositoryProvider pluginStatsRepositoryProvider = new PluginStatsRepositoryProvider();
-    private PluginStatsRepository pluginStatsRepository;
+    private BuildInformationRepositoryProvider buildInformationRepositoryProvider = new BuildInformationRepositoryProvider();
+    private BuildInformationRepository buildInformationRepository;
     private BuildInformation currentBuildInformation;
 
     @Override
@@ -38,8 +38,8 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
         System.out.println("------------------------------------------------------------------------");
         System.out.println(" TRACKING BUILD STATS");
         System.out.println("------------------------------------------------------------------------");
-        pluginStatsRepository = pluginStatsRepositoryProvider.provide();
-        pluginStatsRepository.initialize(context);
+        buildInformationRepository = buildInformationRepositoryProvider.provide();
+        buildInformationRepository.initialize(context);
     }
 
     @Override
@@ -58,7 +58,7 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
                 currentBuildInformation.addMavenEvent(executionEvent);
             } else if (isBuildFinished(executionEvent) && isBuildSuccessful(executionEvent)) {
                 currentBuildInformation.setEndTime(new Date());
-                pluginStatsRepository.save(currentBuildInformation);
+                buildInformationRepository.save(currentBuildInformation);
             }
         }
     }
@@ -77,7 +77,7 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
 
     @Override
     public void close() throws Exception {
-        pluginStatsRepository.cleanUp();
+        buildInformationRepository.cleanUp();
     }
 
     private boolean isBuildFinished(ExecutionEvent executionEvent) {

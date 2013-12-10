@@ -15,8 +15,8 @@
 package org.apache.maven.eventspy;
 
 import co.leantechniques.maven.BuildInformation;
-import co.leantechniques.maven.PluginStatsRepository;
-import co.leantechniques.maven.PluginStatsRepositoryProvider;
+import co.leantechniques.maven.BuildInformationRepository;
+import co.leantechniques.maven.BuildInformationRepositoryProvider;
 import org.apache.maven.execution.ExecutionEvent;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,11 +34,11 @@ import static org.mockito.Mockito.*;
 @RunWith(MockitoJUnitRunner.class)
 public class PluginWatcherEventSpyTest {
     @Mock
-    private PluginStatsRepositoryProvider pluginStatsRepositoryProvider;
+    private BuildInformationRepositoryProvider buildInformationRepositoryProvider;
     @Mock
     EventSpy.Context context;
     @Mock
-    private PluginStatsRepository statsRepository;
+    private BuildInformationRepository statsRepository;
     @Mock
     private Lookup lookup;
     @InjectMocks
@@ -52,7 +52,7 @@ public class PluginWatcherEventSpyTest {
         executionEventBuilder = new ExecutionEventBuilder();
         executionEventBuilder.withProject("1", "1", "1");
 
-        when(pluginStatsRepositoryProvider.provide()).thenReturn(statsRepository);
+        when(buildInformationRepositoryProvider.provide()).thenReturn(statsRepository);
     }
 
     @Test

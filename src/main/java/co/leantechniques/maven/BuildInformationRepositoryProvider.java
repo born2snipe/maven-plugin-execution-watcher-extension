@@ -13,25 +13,25 @@
  */
 package co.leantechniques.maven;
 
-import co.leantechniques.maven.h2.H2PluginStatsRepository;
+import co.leantechniques.maven.h2.H2BuildInformationRepository;
 import org.openide.util.Lookup;
 
-public class PluginStatsRepositoryProvider {
+public class BuildInformationRepositoryProvider {
     private Lookup lookup;
 
-    public PluginStatsRepositoryProvider() {
+    public BuildInformationRepositoryProvider() {
         this(Lookup.getDefault());
     }
 
-    public PluginStatsRepositoryProvider(Lookup lookup) {
+    public BuildInformationRepositoryProvider(Lookup lookup) {
         this.lookup = lookup;
     }
 
-    public PluginStatsRepository provide() {
-        PluginStatsRepository pluginStatsRepository = lookup.lookup(PluginStatsRepository.class);
-        if (pluginStatsRepository == null) {
-            pluginStatsRepository = new H2PluginStatsRepository();
+    public BuildInformationRepository provide() {
+        BuildInformationRepository buildInformationRepository = lookup.lookup(BuildInformationRepository.class);
+        if (buildInformationRepository == null) {
+            buildInformationRepository = new H2BuildInformationRepository();
         }
-        return pluginStatsRepository;
+        return buildInformationRepository;
     }
 }

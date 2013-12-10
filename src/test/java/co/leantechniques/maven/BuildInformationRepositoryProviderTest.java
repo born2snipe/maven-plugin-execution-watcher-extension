@@ -13,7 +13,7 @@
  */
 package co.leantechniques.maven;
 
-import co.leantechniques.maven.h2.H2PluginStatsRepository;
+import co.leantechniques.maven.h2.H2BuildInformationRepository;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,28 +26,28 @@ import static junit.framework.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class PluginStatsRepositoryProviderTest {
+public class BuildInformationRepositoryProviderTest {
     @Mock
-    private PluginStatsRepository repository;
+    private BuildInformationRepository repository;
     @Mock
     private Lookup lookup;
-    private PluginStatsRepositoryProvider provider;
+    private BuildInformationRepositoryProvider provider;
 
     @Before
     public void setUp() throws Exception {
-        provider = new PluginStatsRepositoryProvider(lookup);
+        provider = new BuildInformationRepositoryProvider(lookup);
     }
 
     @Test
     public void shouldUseTheCustomRepositoryIfOneIsProvided() {
-        when(lookup.lookup(PluginStatsRepository.class)).thenReturn(repository);
+        when(lookup.lookup(BuildInformationRepository.class)).thenReturn(repository);
         assertSame(repository, provider.provide());
     }
 
     @Test
     public void shouldProvideTheH2Repository() {
-        when(lookup.lookup(PluginStatsRepository.class)).thenReturn(null);
-        assertTrue(provider.provide() instanceof H2PluginStatsRepository);
+        when(lookup.lookup(BuildInformationRepository.class)).thenReturn(null);
+        assertTrue(provider.provide() instanceof H2BuildInformationRepository);
     }
 
 }

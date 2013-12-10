@@ -23,11 +23,11 @@ import org.skife.jdbi.v2.Handle;
 import java.util.Calendar;
 import java.util.List;
 
-public class H2PluginStatsRepository implements PluginStatsRepository {
+public class H2BuildInformationRepository implements BuildInformationRepository {
     private H2DatabaseManager h2DatabaseManager;
     private Handle handle;
 
-    public H2PluginStatsRepository() {
+    public H2BuildInformationRepository() {
         h2DatabaseManager = new H2DatabaseManager();
     }
 

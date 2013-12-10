@@ -25,8 +25,8 @@ import org.junit.Test;
 
 import java.util.Date;
 
-public class H2PluginStatsRepositoryTest extends AbstractDatabaseTest {
-    private H2PluginStatsRepository repository;
+public class H2BuildInformationRepositoryTest extends AbstractDatabaseTest {
+    private H2BuildInformationRepository repository;
     private MavenSessionBuilder sessionBuilder;
     private H2TestRepository testRepository;
 
@@ -34,7 +34,7 @@ public class H2PluginStatsRepositoryTest extends AbstractDatabaseTest {
     public void setUp() throws Exception {
         H2DatabaseManager databaseManager = new H2DatabaseManager();
 
-        repository = new H2PluginStatsRepository();
+        repository = new H2BuildInformationRepository();
         repository.setH2DatabaseManager(databaseManager);
         repository.initialize(null);
 

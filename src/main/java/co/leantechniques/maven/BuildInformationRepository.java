@@ -16,7 +16,7 @@ package co.leantechniques.maven;
 
 import org.apache.maven.eventspy.EventSpy;
 
-public interface PluginStatsRepository {
+public interface BuildInformationRepository {
     void initialize(EventSpy.Context context);
 
     void save(BuildInformation buildInformation);
