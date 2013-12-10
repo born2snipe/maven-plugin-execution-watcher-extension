@@ -65,12 +65,11 @@ public class H2TestRepository {
         assertEquals("we should have saved the project (" + groupId + ":" + artifactId + ":" + version + ")", 1, count);
     }
 
-    public void assertEndOfBuild(MavenSession session, boolean passed) {
+    public void assertEndOfBuild(MavenSession session) {
         Date startTime = session.getRequest().getStartTime();
 
-        int count = handle.createQuery("select count(1) from build where id =? and end_time is not null and passed = ?")
+        int count = handle.createQuery("select count(1) from build where id =? and end_time is not null")
                 .bind(0, startTime.getTime())
-                .bind(1, passed ? 1 : 0)
                 .mapTo(Integer.class)
                 .first();
 

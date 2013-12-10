@@ -105,8 +105,7 @@ public class H2BuildInformationRepository implements BuildInformationRepository 
     private void insertBuild(BuildInformation buildInformation) {
         long projectId = findOrCreateProject(buildInformation.getTopLevelProject());
 
-        // todo - do not need to store passed, we only save passing builds now
-        handle.createStatement("insert into build (id, start_time, goals, top_level_project_id, data, end_time, passed) values (?,?,?,?,?,?,1)")
+        handle.createStatement("insert into build (id, start_time, goals, top_level_project_id, data, end_time) values (?,?,?,?,?,?)")
                 .bind(0, buildInformation.getId())
                 .bind(1, buildInformation.getStartTime())
                 .bind(2, StringUtils.join(buildInformation.getGoals().iterator(), " "))

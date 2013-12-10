@@ -50,7 +50,7 @@ public class PluginWatcherEventSpyIntegrationTest extends AbstractDatabaseTest {
         MavenSession session = sessionBuilder.toSession();
         testRepository.assertPlugin("2", "2", "2");
         testRepository.assertExecution(session, "2:2:2:2", "2");
-        testRepository.assertEndOfBuild(session, buildPassed);
+        testRepository.assertEndOfBuild(session);
     }
 
     private void simulateSuccessfulBuild() throws Exception {

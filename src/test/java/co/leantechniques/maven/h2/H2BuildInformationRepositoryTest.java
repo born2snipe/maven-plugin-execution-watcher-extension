@@ -108,7 +108,7 @@ public class H2BuildInformationRepositoryTest extends AbstractDatabaseTest {
 
         repository.save(info);
 
-        testRepository.assertEndOfBuild(session, true);
+        testRepository.assertEndOfBuild(session);
         testRepository.assertProject("1", "1", "1");
     }
 
