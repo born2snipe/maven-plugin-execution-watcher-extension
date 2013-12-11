@@ -13,14 +13,18 @@
  */
 package co.leantechniques.maven.h2;
 
+import org.apache.maven.execution.MavenExecutionRequest;
 import org.apache.maven.execution.MavenSession;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 
 import javax.sql.DataSource;
 import java.util.Date;
+import java.util.Map;
+import java.util.Properties;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
 
 public class H2TestRepository {
     private Handle handle;
@@ -74,5 +78,20 @@ public class H2TestRepository {
                 .first();
 
         assertEquals(1, count);
+    }
+
+    public void assertMachineInfoStored(MavenSession session) {
+        MavenExecutionRequest request = session.getRequest();
+        Map<String, Object> machineInfo = handle.createQuery("select * from machine_info mi inner join build b on mi.id = b.machine_info_id and b.id = ?")
+                .bind(0, request.getStartTime().getTime())
+                .first();
+        assertNotNull("we did not find machine info for the build", machineInfo);
+        Properties systemProperties = request.getSystemProperties();
+        assertEquals(systemProperties.get("maven.version"), machineInfo.get("maven_version"));
+        assertEquals(systemProperties.get("java.version"), machineInfo.get("java_version"));
+        assertEquals(systemProperties.get("env.COMPUTERNAME"), machineInfo.get("computer_name"));
+        assertEquals(systemProperties.get("os.name"), machineInfo.get("os"));
+        assertEquals(systemProperties.get("user.name"), machineInfo.get("username"));
+        assertEquals(systemProperties.get("os.arch"), machineInfo.get("os_arch"));
     }
 }

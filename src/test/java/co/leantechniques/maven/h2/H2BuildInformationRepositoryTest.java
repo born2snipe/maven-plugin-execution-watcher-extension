@@ -42,6 +42,12 @@ public class H2BuildInformationRepositoryTest extends AbstractDatabaseTest {
 
         sessionBuilder = new MavenSessionBuilder();
         sessionBuilder.withGoals("clean", "verify");
+        sessionBuilder.withMavenVersion("maven-version");
+        sessionBuilder.withJavaVersion("java-version");
+        sessionBuilder.withComputerName("computer-name");
+        sessionBuilder.withOSName("os-name");
+        sessionBuilder.withOSArch("os-arch");
+        sessionBuilder.withUsername("username");
     }
 
     @After
@@ -110,6 +116,7 @@ public class H2BuildInformationRepositoryTest extends AbstractDatabaseTest {
 
         testRepository.assertEndOfBuild(session);
         testRepository.assertProject("1", "1", "1");
+        testRepository.assertMachineInfoStored(session);
     }
 
 }

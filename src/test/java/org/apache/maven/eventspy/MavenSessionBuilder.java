@@ -45,6 +45,40 @@ public class MavenSessionBuilder {
         return this;
     }
 
+    public MavenSessionBuilder withJavaVersion(String version) {
+        setSystemProperty("java.version", version);
+        return this;
+    }
+
+    public MavenSessionBuilder withComputerName(String name) {
+        setSystemProperty("env.COMPUTERNAME", name);
+        return this;
+    }
+
+    public MavenSessionBuilder withOSName(String name) {
+        setSystemProperty("os.name", name);
+        return this;
+    }
+
+    public MavenSessionBuilder withUsername(String username) {
+        setSystemProperty("user.name", username);
+        return this;
+    }
+
+    private void setSystemProperty(String name, String value) {
+        session.getRequest().getSystemProperties().put(name, value);
+    }
+
+    public MavenSessionBuilder withMavenVersion(String version) {
+        setSystemProperty("maven.version", version);
+        return this;
+    }
+
+    public MavenSessionBuilder withOSArch(String arch) {
+        setSystemProperty("os.arch", arch);
+        return this;
+    }
+
     public MavenProjectBuildResult withProject(String groupId, String artifactId, String version) {
         final MavenProject project = mavenProject(groupId, artifactId, version);
         projectsInBuild.add(project);

@@ -22,6 +22,7 @@ import org.skife.jdbi.v2.Handle;
 
 import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
 
 public class H2BuildInformationRepository implements BuildInformationRepository {
     private H2DatabaseManager h2DatabaseManager;
@@ -48,11 +49,25 @@ public class H2BuildInformationRepository implements BuildInformationRepository 
     public void save(final BuildInformation buildInformation) {
         execute(new Transaction() {
             public void inTransaction(Handle handle) {
-                insertBuild(handle, buildInformation);
+                Long machineInfoId = insertMachineInfo(handle, buildInformation);
+                insertBuild(handle, buildInformation, machineInfoId);
                 insertProjects(handle, buildInformation);
                 insertPluginExecutions(handle, buildInformation);
             }
         });
+    }
+
+    private Long insertMachineInfo(Handle handle, BuildInformation buildInformation) {
+        Map<String, Object> insertResult = handle.createStatement("insert into machine_info (maven_version, java_version, computer_name, os, username, os_arch) values (?,?,?,?,?,?)")
+                .bind(0, buildInformation.getMavenVersion())
+                .bind(1, buildInformation.getJavaVersion())
+                .bind(2, buildInformation.getComputerName())
+                .bind(3, buildInformation.getOsName())
+                .bind(4, buildInformation.getUsername())
+                .bind(5, buildInformation.getOsArch())
+                .executeAndReturnGeneratedKeys()
+                .first();
+        return (Long) insertResult.values().iterator().next();
     }
 
     private void insertPluginExecutions(Handle handle, BuildInformation buildInformation) {
@@ -104,16 +119,17 @@ public class H2BuildInformationRepository implements BuildInformationRepository 
         }
     }
 
-    private void insertBuild(Handle handle, BuildInformation buildInformation) {
+    private void insertBuild(Handle handle, BuildInformation buildInformation, Long machineInfoId) {
         long projectId = findOrCreateProject(handle, buildInformation.getTopLevelProject());
 
-        handle.createStatement("insert into build (id, start_time, goals, top_level_project_id, data, end_time) values (?,?,?,?,?,?)")
+        handle.createStatement("insert into build (id, start_time, goals, top_level_project_id, data, end_time, machine_info_id) values (?,?,?,?,?,?,?)")
                 .bind(0, buildInformation.getId())
                 .bind(1, buildInformation.getStartTime())
                 .bind(2, StringUtils.join(buildInformation.getGoals().iterator(), " "))
                 .bind(3, projectId)
                 .bind(4, buildInformation.getUserSpecifiedBuildData())
                 .bind(5, buildInformation.getEndTime())
+                .bind(6, machineInfoId)
                 .execute();
     }
 

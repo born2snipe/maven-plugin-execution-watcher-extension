@@ -59,10 +59,31 @@ public class BuildInformation {
         return session.getRequest().getStartTime();
     }
 
+    public String getJavaVersion() {
+        return getSystemProperty("java.version");
+    }
+
+    public String getMavenVersion() {
+        return getSystemProperty("maven.version");
+    }
+
+    public String getComputerName() {
+        return getSystemProperty("env.COMPUTERNAME");
+    }
+
+    public String getOsName() {
+        return getSystemProperty("os.name");
+    }
+
+    private String getSystemProperty(String name) {
+        return session.getRequest().getSystemProperties().getProperty(name);
+    }
+
     public Artifact getTopLevelProject() {
         MavenProject project = session.getTopLevelProject();
         return new Project(project.getGroupId(), project.getArtifactId(), project.getVersion());
     }
+
 
     public void setEndTime(Date endTime) {
         this.endTime = endTime;
@@ -86,7 +107,6 @@ public class BuildInformation {
         return projects.get(projects.indexOf(currentProject));
     }
 
-
     private void initializeProjects(MavenSession session) {
         for (MavenProject mavenProject : session.getProjects()) {
             projects.add(new Project(
@@ -95,5 +115,13 @@ public class BuildInformation {
                     mavenProject.getVersion()
             ));
         }
+    }
+
+    public String getUsername() {
+        return getSystemProperty("user.name");
+    }
+
+    public String getOsArch() {
+        return getSystemProperty("os.arch");
     }
 }
