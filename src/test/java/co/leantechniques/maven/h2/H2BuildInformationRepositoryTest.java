@@ -15,6 +15,7 @@
 package co.leantechniques.maven.h2;
 
 import co.leantechniques.maven.BuildInformation;
+import co.leantechniques.maven.scm.CodeRevision;
 import org.apache.maven.eventspy.ExecutionEventBuilder;
 import org.apache.maven.eventspy.MavenSessionBuilder;
 import org.apache.maven.execution.ExecutionEvent;
@@ -29,6 +30,7 @@ public class H2BuildInformationRepositoryTest extends AbstractDatabaseTest {
     private H2BuildInformationRepository repository;
     private MavenSessionBuilder sessionBuilder;
     private H2TestRepository testRepository;
+    private CodeRevision codeRevision;
 
     @Before
     public void setUp() throws Exception {
@@ -48,6 +50,7 @@ public class H2BuildInformationRepositoryTest extends AbstractDatabaseTest {
         sessionBuilder.withOSName("os-name");
         sessionBuilder.withOSArch("os-arch");
         sessionBuilder.withUsername("username");
+        codeRevision = new CodeRevision("git", "revision");
     }
 
     @After
@@ -64,7 +67,7 @@ public class H2BuildInformationRepositoryTest extends AbstractDatabaseTest {
         ExecutionEvent event = builder.toEvent();
         MavenSession session = event.getSession();
 
-        BuildInformation buildInformation = new BuildInformation(session, null);
+        BuildInformation buildInformation = new BuildInformation(session, null, codeRevision);
         buildInformation.addMavenEvent(event);
 
         repository.save(buildInformation);
@@ -81,7 +84,7 @@ public class H2BuildInformationRepositoryTest extends AbstractDatabaseTest {
         ExecutionEvent event = builder.toEvent();
         MavenSession session = event.getSession();
 
-        repository.save(new BuildInformation(session, null));
+        repository.save(new BuildInformation(session, null, codeRevision));
 
         testRepository.assertProject("1", "1", "1");
         testRepository.assertProject("2", "2", "2");
@@ -96,7 +99,7 @@ public class H2BuildInformationRepositoryTest extends AbstractDatabaseTest {
         ExecutionEvent event = builder.toEvent();
         MavenSession session = event.getSession();
 
-        repository.save(new BuildInformation(session, null));
+        repository.save(new BuildInformation(session, null, codeRevision));
 
         testRepository.assertProject("1", "1", "1");
     }
@@ -109,7 +112,7 @@ public class H2BuildInformationRepositoryTest extends AbstractDatabaseTest {
         ExecutionEvent event = builder.toEvent();
         MavenSession session = event.getSession();
 
-        BuildInformation info = new BuildInformation(session, null);
+        BuildInformation info = new BuildInformation(session, null, codeRevision);
         info.setEndTime(new Date());
 
         repository.save(info);

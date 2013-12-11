@@ -16,6 +16,7 @@ package org.apache.maven.eventspy;
 import org.apache.maven.execution.*;
 import org.apache.maven.project.MavenProject;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -76,6 +77,11 @@ public class MavenSessionBuilder {
 
     public MavenSessionBuilder withOSArch(String arch) {
         setSystemProperty("os.arch", arch);
+        return this;
+    }
+
+    public MavenSessionBuilder withBaseDirectory(File directory) {
+        session.getRequest().setBaseDirectory(directory);
         return this;
     }
 

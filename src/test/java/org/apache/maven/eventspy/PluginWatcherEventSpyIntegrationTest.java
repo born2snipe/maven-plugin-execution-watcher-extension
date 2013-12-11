@@ -16,11 +16,14 @@ package org.apache.maven.eventspy;
 import co.leantechniques.maven.h2.AbstractDatabaseTest;
 import co.leantechniques.maven.h2.H2DatabaseManager;
 import co.leantechniques.maven.h2.H2TestRepository;
+import co.leantechniques.maven.scm.CodeRevision;
+import co.leantechniques.maven.scm.CodeRevisionProvider;
 import org.apache.maven.execution.ExecutionEvent;
 import org.apache.maven.execution.MavenSession;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.Date;
 
 public class PluginWatcherEventSpyIntegrationTest extends AbstractDatabaseTest {
@@ -28,13 +31,16 @@ public class PluginWatcherEventSpyIntegrationTest extends AbstractDatabaseTest {
     private Date startTime = new Date();
     private H2TestRepository testRepository;
     private MavenSessionBuilder sessionBuilder;
+    private CodeRevision codeRevision;
 
     @Before
     public void setUp() throws Exception {
         H2DatabaseManager databaseManager = new H2DatabaseManager();
         testRepository = new H2TestRepository(databaseManager.load());
+        codeRevision = new CodeRevision("static", "revision");
 
         eventSpy = new PluginWatcherEventSpy();
+        eventSpy.setCodeRevisionProvider(new StaticCodeRevisionProvider(codeRevision));
         sessionBuilder = new MavenSessionBuilder(startTime);
     }
 
@@ -43,14 +49,15 @@ public class PluginWatcherEventSpyIntegrationTest extends AbstractDatabaseTest {
     public void shouldSupportStoringSuccessfulBuilds() throws Exception {
         simulateSuccessfulBuild();
 
-        assertBuildInfoStored(true);
+        assertBuildInfoStored();
     }
 
-    private void assertBuildInfoStored(boolean buildPassed) {
+    private void assertBuildInfoStored() {
         MavenSession session = sessionBuilder.toSession();
         testRepository.assertPlugin("2", "2", "2");
         testRepository.assertExecution(session, "2:2:2:2", "2");
         testRepository.assertEndOfBuild(session);
+        testRepository.assertCodeRevision(session, codeRevision);
     }
 
     private void simulateSuccessfulBuild() throws Exception {
@@ -98,5 +105,18 @@ public class PluginWatcherEventSpyIntegrationTest extends AbstractDatabaseTest {
             eventBuilder.withProject("1", "1", "1").withFailure();
         }
         return eventBuilder;
+    }
+
+    private class StaticCodeRevisionProvider implements CodeRevisionProvider {
+        private final CodeRevision codeRevision;
+
+        private StaticCodeRevisionProvider(CodeRevision codeRevision) {
+            this.codeRevision = codeRevision;
+        }
+
+        @Override
+        public CodeRevision determineRevisionOf(File directory) {
+            return codeRevision;
+        }
     }
 }

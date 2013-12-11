@@ -17,6 +17,8 @@ package org.apache.maven.eventspy;
 import co.leantechniques.maven.BuildInformation;
 import co.leantechniques.maven.BuildInformationRepository;
 import co.leantechniques.maven.BuildInformationRepositoryProvider;
+import co.leantechniques.maven.scm.CodeRevision;
+import co.leantechniques.maven.scm.CodeRevisionProvider;
 import org.apache.maven.execution.ExecutionEvent;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,6 +28,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.openide.util.Lookup;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -42,16 +45,21 @@ public class PluginWatcherEventSpyTest {
     private BuildInformationRepository statsRepository;
     @Mock
     private Lookup lookup;
+    @Mock
+    private CodeRevisionProvider codeRevisionProvider;
     @InjectMocks
     private PluginWatcherEventSpy spy = new PluginWatcherEventSpy();
     private ExecutionEventBuilder executionEventBuilder;
+    private File baseDirectory;
 
     @Before
     public void setUp() throws Exception {
         System.getProperties().remove("plugin.execution.watcher.build.data");
+        baseDirectory = new File("base-dir").getCanonicalFile();
 
         executionEventBuilder = new ExecutionEventBuilder();
         executionEventBuilder.withProject("1", "1", "1");
+        executionEventBuilder.withBaseDirectory(baseDirectory);
 
         when(buildInformationRepositoryProvider.provide()).thenReturn(statsRepository);
     }
@@ -143,6 +151,18 @@ public class PluginWatcherEventSpyTest {
         spy.onEvent(executionEventBuilder.toEvent());
 
         assertNotNull(spy.getCurrentBuildInformation());
+    }
+
+    @Test
+    public void onEvent_shouldCaptureTheScmVersionOnStartOfBuild() throws Exception {
+        CodeRevision codeRevision = new CodeRevision("git", "revision");
+        when(codeRevisionProvider.determineRevisionOf(baseDirectory)).thenReturn(codeRevision);
+        executionEventBuilder.withBuildStarting();
+
+        spy.onEvent(executionEventBuilder.toEvent());
+
+        BuildInformation buildInformation = spy.getCurrentBuildInformation();
+        assertSame(codeRevision, buildInformation.getCodeRevision());
     }
 
     @Test

@@ -122,7 +122,7 @@ public class H2BuildInformationRepository implements BuildInformationRepository 
     private void insertBuild(Handle handle, BuildInformation buildInformation, Long machineInfoId) {
         long projectId = findOrCreateProject(handle, buildInformation.getTopLevelProject());
 
-        handle.createStatement("insert into build (id, start_time, goals, top_level_project_id, data, end_time, machine_info_id) values (?,?,?,?,?,?,?)")
+        handle.createStatement("insert into build (id, start_time, goals, top_level_project_id, data, end_time, machine_info_id, scm, scm_revision) values (?,?,?,?,?,?,?,?,?)")
                 .bind(0, buildInformation.getId())
                 .bind(1, buildInformation.getStartTime())
                 .bind(2, StringUtils.join(buildInformation.getGoals().iterator(), " "))
@@ -130,6 +130,8 @@ public class H2BuildInformationRepository implements BuildInformationRepository 
                 .bind(4, buildInformation.getUserSpecifiedBuildData())
                 .bind(5, buildInformation.getEndTime())
                 .bind(6, machineInfoId)
+                .bind(7, buildInformation.getCodeRevision().scm)
+                .bind(8, buildInformation.getCodeRevision().revision)
                 .execute();
     }
 

@@ -18,6 +18,8 @@ import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.MojoExecution;
 
+import java.io.File;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -35,6 +37,7 @@ public class ExecutionEventBuilder {
         this.sessionBuilder = sessionBuilder;
         mojoExecution = new MockMojoExecution();
         event = mock(ExecutionEvent.class);
+        withBaseDirectory(new File("base-dir"));
     }
 
     public ExecutionEventBuilder withBuildStarting() {
@@ -74,6 +77,11 @@ public class ExecutionEventBuilder {
 
     public PluginExecutionState withPlugin(String groupId, String artifactId, String version, String goal) {
         return withPlugin(groupId, artifactId, version, goal, groupId + ":" + artifactId + ":" + version + ":" + goal);
+    }
+
+    public ExecutionEventBuilder withBaseDirectory(File directory) {
+        sessionBuilder.withBaseDirectory(directory);
+        return this;
     }
 
     public PluginExecutionState withPlugin(String groupId, String artifactId, String version, String goal, String executionId) {

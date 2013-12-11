@@ -17,12 +17,15 @@ package org.apache.maven.eventspy;
 import co.leantechniques.maven.BuildInformation;
 import co.leantechniques.maven.BuildInformationRepository;
 import co.leantechniques.maven.BuildInformationRepositoryProvider;
+import co.leantechniques.maven.scm.CodeRevisionProvider;
+import co.leantechniques.maven.scm.ScmRevisionProvider;
 import org.apache.maven.execution.BuildFailure;
 import org.apache.maven.execution.ExecutionEvent;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.annotations.Component;
 
+import java.io.File;
 import java.util.Date;
 
 @Component(role = EventSpy.class)
@@ -32,6 +35,7 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
     private BuildInformationRepositoryProvider buildInformationRepositoryProvider = new BuildInformationRepositoryProvider();
     private BuildInformationRepository buildInformationRepository;
     private BuildInformation currentBuildInformation;
+    private CodeRevisionProvider codeRevisionProvider = new ScmRevisionProvider();
 
     @Override
     public void init(Context context) throws Exception {
@@ -49,8 +53,11 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
             ExecutionEvent executionEvent = (ExecutionEvent) event;
 
             if (shouldInitializeBuildInformation(executionEvent)) {
+                File baseDirectory = new File(((ExecutionEvent) event).getSession().getRequest().getBaseDirectory());
                 currentBuildInformation = new BuildInformation(
-                        executionEvent.getSession(), System.getProperty(BUILD_DATA_KEY)
+                        executionEvent.getSession(),
+                        System.getProperty(BUILD_DATA_KEY),
+                        codeRevisionProvider.determineRevisionOf(baseDirectory)
                 );
             }
 
@@ -104,5 +111,9 @@ public class PluginWatcherEventSpy extends AbstractEventSpy {
 
     protected BuildInformation getCurrentBuildInformation() {
         return currentBuildInformation;
+    }
+
+    public void setCodeRevisionProvider(CodeRevisionProvider codeRevisionProvider) {
+        this.codeRevisionProvider = codeRevisionProvider;
     }
 }

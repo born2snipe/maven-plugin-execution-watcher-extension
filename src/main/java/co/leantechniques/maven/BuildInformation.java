@@ -13,6 +13,7 @@
  */
 package co.leantechniques.maven;
 
+import co.leantechniques.maven.scm.CodeRevision;
 import org.apache.maven.execution.ExecutionEvent;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.project.MavenProject;
@@ -27,10 +28,12 @@ public class BuildInformation {
     private ArrayList<ExecutionEvent> eventsProcessed = new ArrayList<ExecutionEvent>();
     private Date endTime;
     private ArrayList<Project> projects = new ArrayList<Project>();
+    private CodeRevision codeRevision;
 
-    public BuildInformation(MavenSession session, String userSpecifiedBuildData) {
+    public BuildInformation(MavenSession session, String userSpecifiedBuildData, CodeRevision codeRevision) {
         this.userSpecifiedBuildData = userSpecifiedBuildData;
         this.session = session;
+        this.codeRevision = codeRevision;
         initializeProjects(session);
     }
 
@@ -123,5 +126,9 @@ public class BuildInformation {
 
     public String getOsArch() {
         return getSystemProperty("os.arch");
+    }
+
+    public CodeRevision getCodeRevision() {
+        return codeRevision;
     }
 }

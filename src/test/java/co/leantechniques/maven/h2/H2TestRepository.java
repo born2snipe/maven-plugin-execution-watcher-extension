@@ -13,6 +13,7 @@
  */
 package co.leantechniques.maven.h2;
 
+import co.leantechniques.maven.scm.CodeRevision;
 import org.apache.maven.execution.MavenExecutionRequest;
 import org.apache.maven.execution.MavenSession;
 import org.skife.jdbi.v2.DBI;
@@ -93,5 +94,14 @@ public class H2TestRepository {
         assertEquals(systemProperties.get("os.name"), machineInfo.get("os"));
         assertEquals(systemProperties.get("user.name"), machineInfo.get("username"));
         assertEquals(systemProperties.get("os.arch"), machineInfo.get("os_arch"));
+    }
+
+    public void assertCodeRevision(MavenSession session, CodeRevision codeRevision) {
+        MavenExecutionRequest request = session.getRequest();
+        Map<String, Object> build = handle.createQuery("select * from build where id = ?")
+                .bind(0, request.getStartTime().getTime())
+                .first();
+        assertEquals(codeRevision.scm, build.get("scm"));
+        assertEquals(codeRevision.revision, build.get("scm_revision"));
     }
 }
