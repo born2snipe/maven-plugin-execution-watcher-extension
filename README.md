@@ -3,7 +3,7 @@
 This maven extension logs all plugin executions to a [H2](http://www.h2database.com/html/main.html) database. This allows for monitoring plugins over time to help determine if there is any performance decline.
 
 ## Setup
-- Download the latest jar file
+- Clone the repo or download the zip of the code and build the project using Maven and get the jar from the target directory
 - Put the jar file in your maven's `lib/ext` directory. Maven auto-magically puts these jars in the classpath.
 - The data is stored in a local [H2](http://www.h2database.com/html/main.html) database in `${user.home}/.m2-plugin-execution-watcher`. To view the data you just need a JDBC friendly database viewer.
 
