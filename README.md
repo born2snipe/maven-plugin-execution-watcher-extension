@@ -15,7 +15,7 @@ This maven extension logs all plugin executions to a [H2](http://www.h2database.
     - This is a limitation of the embedded [H2](http://www.h2database.com/html/main.html) database. Only one process can access the database. (ex. mvn, db viewer, etc)
 
 - Can I change out the storage mechanism?
-    - You just need to implement the PluginStatsRepository
+    - You just need to implement the [BuildInformationRepository][1]
     - Follow the steps for using Java's [ServiceLoader](http://docs.oracle.com/javase/6/docs/api/java/util/ServiceLoader.html) or use Netbeans [@ServiceProvider](http://bits.netbeans.org/dev/javadoc/org-openide-util-lookup/org/openide/util/lookup/ServiceProvider.html) annotation
     - Put your newly created class in a jar
     - Place your new jar with it's required dependencies in the `lib/ext`
@@ -24,3 +24,5 @@ This maven extension logs all plugin executions to a [H2](http://www.h2database.
 - Can I track some data that is specific to the build?
     - You can provide the following system property `plugin.execution.watcher.build.data=${data-to-store}` and the value provided will be stored with that run of the build
     - the data can be up to 1024 characters
+
+[1]: https://github.com/born2snipe/maven-plugin-execution-watcher-extension/blob/master/src/main/java/co/leantechniques/maven/BuildInformationRepository.java "repo"
