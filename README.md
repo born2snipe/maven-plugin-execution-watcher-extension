@@ -1,6 +1,6 @@
 # Maven Plugin Execution Time Monitor Extension
 
-This maven extension logs all plugin executions to a H2 database. This allows for monitoring plugins over time to help determine if there is any performance decline.
+This maven extension logs all plugin executions to a [H2](http://www.h2database.com/html/main.html) database. This allows for monitoring plugins over time to help determine if there is any performance decline.
 
 ## Setup
 - Download the latest jar file
